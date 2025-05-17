@@ -92,7 +92,7 @@ def create_project_structure(root_dir): # root_dir is now directly the project n
         },
         "docs": None
     }
-
+    print("hioiiiii")
     # Function to recursively create directories and files
     def create_items(current_path, items):
         for name, content in items.items():
