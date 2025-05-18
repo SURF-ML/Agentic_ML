@@ -1,0 +1,9 @@
+{
+  "project_name": "ConfigDrivenProject",
+  "project_path": "./agent_environment/ML_Test_Agent/",
+  "task_description": "I have a medical csv dataset, let's create a machine learning pipeline to train a simple pytorch lienar model.",
+  "data_type": "csv",
+  "target_framework": "Flexible",
+  "data_folder_path_from_user": "../../raw_data/",
+  "target_tensor_shapes_input": "unknown"
+}
