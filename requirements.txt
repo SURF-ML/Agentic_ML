@@ -1,0 +1,9 @@
+requests
+beautifulsoup4
+arxiv
+PyGithub
+smolagents[transformers]
+smolagents[telemetry,toolkit]
+smolagents[litellm]
+python-dotenv
+transformers
