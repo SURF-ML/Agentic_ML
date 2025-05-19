@@ -40,12 +40,6 @@ def create_project_structure(root_dir): # root_dir is now directly the project n
         },
         "src": {
             "__init__.py": "",
-            "agent": {
-                "__init__.py": "",
-                "dos_and_donts.md": "# Agent Do's and Don'ts\n\n## Do:\n- \n\n## Don't:\n- ",
-                "scratchpad.txt": "# Agent Scratchpad\n\nThis is a temporary space for the agent to make notes.",
-                "memory_log.json": "{}"
-            },
             "data_preprocessing": {
                 "__init__.py": "",
                 "loader.py": "class DataLoader:\n    def __init__(self, data_path):\n        self.data_path = data_path\n\n    def load_data(self):\n        # TODO: Implement data loading logic based on data_path\n        raise NotImplementedError(\"load_data method not implemented\")\n\n# Example usage:\n# if __name__ == '__main__':\n#     loader = DataLoader('path/to/your/data')\n#     data = loader.load_data()",
@@ -92,7 +86,6 @@ def create_project_structure(root_dir): # root_dir is now directly the project n
         },
         "docs": None
     }
-    print("hioiiiii")
     # Function to recursively create directories and files
     def create_items(current_path, items):
         for name, content in items.items():
@@ -123,7 +116,7 @@ def create_project_structure(root_dir): # root_dir is now directly the project n
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Create a skeletal structure for a new Machine Learning project.")
-    parser.add_argument("project_name", help="The name of the project root directory to be created.")
+    parser.add_argument("--project_name", help="The name of the project root directory to be created.")
     # Example of an optional argument with a default value if needed in the future:
     # parser.add_argument("--template", help="Specify a project template", default="default")
 
