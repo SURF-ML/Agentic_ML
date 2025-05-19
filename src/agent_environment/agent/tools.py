@@ -7,6 +7,12 @@ import shutil # For deleting directories
 import glob # For pattern matching file names (e.g. finding specific extensions)
 from datetime import datetime
 
+import zipfile
+import re
+import fnmatch
+from importlib import metadata as importlib_metadata # For package versions
+
+
 from smolagents import tool
 
 # --- File System Tools ---
@@ -676,3 +682,549 @@ def list_agent_log_files(path_to_list: str | None = None) -> str:
         return f"Error listing contents of '{target_path}': {str(e)}"
     
 
+@tool
+def download_file_from_url(url: str, save_directory: str, filename: str | None = None) -> str:
+    """
+    Downloads a file from a given URL and saves it to a specified directory.
+
+    Args:
+        url: The URL of the file to download.
+        save_directory: The local directory path where the file should be saved.
+        filename: Optional. The desired filename. If None, it tries to infer from the URL
+                  or Content-Disposition header.
+
+    Returns:
+        A message indicating success (including the full save path) or failure.
+    """
+    try:
+        os.makedirs(save_directory, exist_ok=True)
+        
+        response = requests.get(url, stream=True, timeout=30)
+        response.raise_for_status() # Raise an exception for HTTP errors
+
+        if not filename:
+            if "content-disposition" in response.headers:
+                cd = response.headers['content-disposition']
+                fname_match = re.search(r'filename="?([^"]+)"?', cd)
+                if fname_match:
+                    filename = fname_match.group(1)
+            if not filename: # Fallback to URL part
+                filename = url.split('/')[-1]
+                if not filename or "?" in filename : # if URL ends with / or has query params
+                     filename = "downloaded_file" # Default generic name
+
+        save_path = os.path.join(save_directory, filename)
+        
+        with open(save_path, "wb") as f:
+            for chunk in response.iter_content(chunk_size=8192):
+                f.write(chunk)
+        
+        return f"Successfully downloaded file from {url} to {save_path}"
+    except requests.exceptions.RequestException as e:
+        return f"Error downloading file from {url}: {str(e)}"
+    except IOError as e:
+        return f"Error saving file to {save_directory}: {str(e)}"
+    except Exception as e:
+        return f"An unexpected error occurred: {str(e)}"
+    
+
+@tool
+def find_files_by_pattern(directory: str, pattern: str, recursive: bool = True) -> str:
+    """
+    Finds files within a specified directory (and its subdirectories) that match a given glob pattern.
+
+    Args:
+        directory: The directory to start the search from.
+        pattern: The glob pattern to match filenames (e.g., "*.txt", "data_*.csv").
+        recursive: If True, searches subdirectories recursively. Defaults to True.
+
+    Returns:
+        A string listing the found files, or a message if no files are found or an error occurs.
+    """
+    if not os.path.isdir(directory):
+        return f"Error: Directory '{directory}' not found."
+    
+    try:
+        search_path = os.path.join(directory, pattern)
+        if recursive:
+            # For recursive search with glob, the pattern might need to include '**/'
+            # e.g. if pattern is '*.txt', use os.path.join(directory, '**', pattern)
+            # However, glob itself handles the recursive flag well if pattern doesn't specify dir components.
+            # Let's ensure the pattern is relative for recursion within the directory.
+            if os.path.isabs(pattern):
+                return "Error: For recursive search, pattern should be relative (e.g., '*.txt' or 'subfolder/*.log')."
+
+            # If pattern is simple like '*.txt', create recursive path
+            if not any(c in pattern for c in ['/', '\\', '*']): # Simple pattern
+                search_path_recursive = os.path.join(directory, '**', pattern)
+            else: # Pattern already has path components or complex wildcards
+                search_path_recursive = os.path.join(directory, pattern)
+
+            found_files = glob.glob(search_path_recursive, recursive=True)
+        else:
+            found_files = glob.glob(search_path)
+            
+        # Filter out directories if the pattern accidentally matches them (e.g. "data*")
+        actual_files = [f for f in found_files if os.path.isfile(f)]
+
+        if not actual_files:
+            return f"No files found matching pattern '{pattern}' in directory '{directory}' (recursive={recursive})."
+        
+        return f"Files found matching '{pattern}' in '{directory}':\n" + "\n".join(actual_files)
+    except Exception as e:
+        return f"Error finding files in {directory} with pattern {pattern}: {str(e)}"
+
+@tool
+def unzip_file(zip_filepath: str, extract_to_dir: str) -> str:
+    """
+    Extracts the contents of a ZIP archive to a specified directory.
+
+    Args:
+        zip_filepath: The path to the .zip file.
+        extract_to_dir: The directory where the contents should be extracted.
+                        It will be created if it doesn't exist.
+
+    Returns:
+        A message indicating success or failure.
+    """
+    if not os.path.exists(zip_filepath):
+        return f"Error: ZIP file not found at {zip_filepath}."
+    if not zipfile.is_zipfile(zip_filepath):
+        return f"Error: {zip_filepath} is not a valid ZIP file."
+
+    try:
+        os.makedirs(extract_to_dir, exist_ok=True)
+        with zipfile.ZipFile(zip_filepath, 'r') as zip_ref:
+            zip_ref.extractall(extract_to_dir)
+        return f"Successfully extracted '{zip_filepath}' to '{extract_to_dir}'."
+    except zipfile.BadZipFile:
+        return f"Error: Bad ZIP file or unsupported compression method in {zip_filepath}."
+    except Exception as e:
+        return f"Error extracting ZIP file {zip_filepath}: {str(e)}"
+
+@tool
+def zip_files(items_to_zip: list[str], output_zip_path: str, base_dir_to_arc_from: str | None = None) -> str:
+    """
+    Compresses specified files or directories into a single ZIP archive.
+
+    Args:
+        items_to_zip: A list of paths to files or directories to be added to the ZIP file.
+        output_zip_path: The full path for the output .zip file (e.g., '/path/to/archive.zip').
+        base_dir_to_arc_from: Optional. A common base directory. If provided, paths in the
+                              ZIP file will be relative to this directory. Otherwise, paths
+                              will be relative to the item's own directory or be absolute.
+                              For example, to zip 'project/src/file.txt' as 'src/file.txt' in the zip,
+                              set base_dir_to_arc_from to 'project'.
+
+    Returns:
+        A message indicating success or failure.
+    """
+    try:
+        # Ensure output directory exists
+        output_zip_dir = os.path.dirname(output_zip_path)
+        if output_zip_dir:
+            os.makedirs(output_zip_dir, exist_ok=True)
+
+        with zipfile.ZipFile(output_zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            for item_path in items_to_zip:
+                if not os.path.exists(item_path):
+                    return f"Error: Item '{item_path}' not found. Aborting zip operation."
+                
+                if os.path.isfile(item_path):
+                    arcname = None
+                    if base_dir_to_arc_from:
+                        arcname = os.path.relpath(item_path, start=base_dir_to_arc_from)
+                    else: # Use filename if no base_dir, or make relative to its own dir if full path
+                        arcname = os.path.basename(item_path)
+                    zipf.write(item_path, arcname)
+                elif os.path.isdir(item_path):
+                    for root, _, files in os.walk(item_path):
+                        for file in files:
+                            file_path = os.path.join(root, file)
+                            arcname = None
+                            if base_dir_to_arc_from:
+                                arcname = os.path.relpath(file_path, start=base_dir_to_arc_from)
+                            else: # Make path relative to the directory being zipped
+                                arcname = os.path.relpath(file_path, start=os.path.dirname(item_path) if item_path.endswith(os.sep) else item_path)
+                                if arcname == ".": # if item_path is a file and base_dir is its dir
+                                    arcname = os.path.basename(file_path)
+                            zipf.write(file_path, arcname)
+        return f"Successfully created ZIP file: {output_zip_path} containing {len(items_to_zip)} item(s)/root(s)."
+    except Exception as e:
+        return f"Error creating ZIP file {output_zip_path}: {str(e)}"
+
+@tool
+def grep_directory(directory: str, search_pattern: str, file_pattern: str = "*", recursive: bool = True, case_sensitive: bool = False) -> str:
+    """
+    Searches for a text pattern (regex) in files within a directory.
+
+    Args:
+        directory: The directory to search in.
+        search_pattern: The regular expression to search for.
+        file_pattern: Glob pattern for filenames to search within (e.g., "*.txt", "*.py"). Defaults to "*".
+        recursive: If True, searches subdirectories. Defaults to True.
+        case_sensitive: If False, the search is case-insensitive. Defaults to False.
+
+    Returns:
+        A string listing matching files and lines, or a message if no matches are found.
+    """
+    if not os.path.isdir(directory):
+        return f"Error: Directory '{directory}' not found."
+
+    results = []
+    regex_flags = 0 if case_sensitive else re.IGNORECASE
+    try:
+        compiled_regex = re.compile(search_pattern, regex_flags)
+    except re.error as e:
+        return f"Error: Invalid regex pattern '{search_pattern}': {e}"
+
+    for root, _, files in os.walk(directory):
+        for filename in files:
+            if fnmatch.fnmatch(filename, file_pattern):
+                filepath = os.path.join(root, filename)
+                try:
+                    with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
+                        for line_num, line in enumerate(f, 1):
+                            if compiled_regex.search(line):
+                                results.append(f"{os.path.relpath(filepath, directory)}:{line_num}: {line.strip()}")
+                except Exception as e:
+                    results.append(f"Error reading file {filepath}: {str(e)}")
+        if not recursive:
+            break # Only process the top directory if not recursive
+
+    if not results:
+        return f"No matches found for pattern '{search_pattern}' in files matching '{file_pattern}' within '{directory}'."
+    return f"Search results for '{search_pattern}' in '{directory}':\n" + "\n".join(results)
+
+@tool
+def read_pdf_content(filepath: str, max_pages: int = 0) -> str:
+    """
+    Extracts text content from a PDF file.
+    Requires the 'PyPDF2' package: `pip install PyPDF2`.
+
+    Args:
+        filepath: The path to the PDF file.
+        max_pages: Maximum number of pages to read. If 0, reads all pages. Defaults to 0.
+
+    Returns:
+        The extracted text content as a string, or an error message.
+    """
+    try:
+        import PyPDF2 # type: ignore
+    except ImportError:
+        return "Error: The 'PyPDF2' library is not installed. Please install it using 'pip install PyPDF2'."
+
+    if not os.path.exists(filepath):
+        return f"Error: PDF file not found at {filepath}."
+    if not filepath.lower().endswith(".pdf"):
+        return f"Error: File {filepath} does not appear to be a PDF file."
+
+    try:
+        with open(filepath, 'rb') as f:
+            reader = PyPDF2.PdfReader(f)
+            if reader.is_encrypted:
+                # Try to decrypt with an empty password, common for some "locked" PDFs
+                try:
+                    if reader.decrypt('') == PyPDF2.PasswordType.OWNER_PASSWORD: # or USER_PASSWORD
+                         pass # Successfully decrypted
+                    else: # This branch might indicate it needs a real password or failed for other reason
+                        return f"Error: PDF file {filepath} is encrypted and could not be decrypted with an empty password."
+                except Exception: # PyPDF2 can raise various things on decrypt failure
+                    return f"Error: PDF file {filepath} is encrypted and decryption failed."
+
+
+            text_content = []
+            num_pages_to_read = len(reader.pages)
+            if max_pages > 0:
+                num_pages_to_read = min(num_pages_to_read, max_pages)
+
+            for i in range(num_pages_to_read):
+                page = reader.pages[i]
+                text_content.append(page.extract_text() or "") # Ensure empty string if None
+
+        full_text = "\n".join(text_content).strip()
+        if not full_text:
+            return f"No text could be extracted from {filepath}. The PDF might contain images of text or use complex encoding."
+        return f"Extracted text from {filepath} (first {num_pages_to_read} pages):\n{full_text[:5000]}{'...' if len(full_text) > 5000 else ''}" # Limit output
+    except Exception as e:
+        return f"Error reading PDF file {filepath}: {str(e)}"
+
+# --- Execution & Environment Tools ---
+
+@tool
+def check_python_package_version(package_name: str) -> str:
+    """
+    Checks if a specific Python package is installed and returns its version.
+
+    Args:
+        package_name: The name of the Python package.
+
+    Returns:
+        A string indicating the package version or if it's not found.
+    """
+    try:
+        version = importlib_metadata.version(package_name)
+        return f"Package '{package_name}' is installed with version: {version}"
+    except importlib_metadata.PackageNotFoundError:
+        return f"Package '{package_name}' is not installed."
+    except Exception as e:
+        return f"Error checking package version for '{package_name}': {str(e)}"
+
+@tool
+def list_installed_python_packages() -> str:
+    """
+    Lists all installed Python packages and their versions.
+
+    Returns:
+        A string listing installed packages and their versions, or an error message.
+    """
+    try:
+        distributions = importlib_metadata.distributions()
+        packages = []
+        for dist in distributions:
+            packages.append(f"{dist.name} ({dist.version})")
+        
+        if not packages:
+            return "No Python packages found."
+        return "Installed Python packages:\n" + "\n".join(sorted(packages))
+    except Exception as e:
+        return f"Error listing installed Python packages: {str(e)}"
+
+# --- Web Interaction Tools ---
+
+@tool
+def search_google_scholar(query: str, max_results: int = 5) -> str:
+    """
+    Searches Google Scholar for academic papers.
+    Requires the 'scholarly' package: `pip install scholarly`.
+
+    Args:
+        query: The search query.
+        max_results: The maximum number of results to return. Defaults to 5.
+
+    Returns:
+        A formatted string with search results, or an error message.
+    """
+    try:
+        from scholarly import scholarly # type: ignore
+        from scholarly import MaxRetriesExceededException, ProxyError # type: ignore
+    except ImportError:
+        return "Error: The 'scholarly' library is not installed. Please install it using 'pip install scholarly'."
+
+    results_output = []
+    try:
+        # It's good practice to set a proxy if you're making many requests,
+        # but for a simple tool, direct access might work for a while.
+        # scholarly.use_proxy(http="your_proxy", https="your_proxy")
+        
+        search_query = scholarly.search_pubs(query)
+        count = 0
+        for i in range(max_results): # scholarly's generator can be slow or hit limits
+            try:
+                pub = next(search_query)
+                if pub:
+                    title = pub.get('bib', {}).get('title', 'N/A')
+                    authors = ", ".join(pub.get('bib', {}).get('author', ['N/A']))
+                    venue = pub.get('bib', {}).get('venue', 'N/A')
+                    pub_year = pub.get('bib', {}).get('pub_year', 'N/A')
+                    abstract = pub.get('bib', {}).get('abstract', 'N/A')
+                    url = pub.get('pub_url', pub.get('eprint_url', 'N/A')) # pub_url is often paywalled, eprint_url might be a PDF
+
+                    results_output.append(
+                        f"Title: {title}\n"
+                        f"Authors: {authors}\n"
+                        f"Venue: {venue} ({pub_year})\n"
+                        f"Abstract: {abstract[:300]}...\n"
+                        f"URL: {url}\n"
+                        f"Citations: {pub.get('num_citations', 'N/A')}"
+                    )
+                    count +=1
+                if count >= max_results:
+                    break
+            except StopIteration:
+                break # No more results
+            except MaxRetriesExceededException:
+                results_output.append("Note: scholarly library hit max retries. Results may be incomplete.")
+                break
+            except ProxyError:
+                results_output.append("Note: scholarly library encountered a proxy error. Are you rate-limited or is network/proxy misconfigured?")
+                break
+            except Exception as e: # Catch other potential errors from scholarly per item
+                results_output.append(f"Note: Error fetching a specific Scholar result: {e}")
+                continue
+
+
+        if not results_output:
+            return f"No results found on Google Scholar for query: {query}"
+        return f"Google Scholar results for '{query}':\n\n" + "\n\n---\n\n".join(results_output)
+    except MaxRetriesExceededException:
+        return "Error searching Google Scholar: Max retries exceeded. You might be rate-limited. Try using a proxy with scholarly."
+    except ProxyError:
+        return "Error searching Google Scholar: Proxy error. Check your network or proxy configuration for scholarly."
+    except Exception as e:
+        return f"Error searching Google Scholar for '{query}': {str(e)}"
+
+
+# --- Agent Specific/Memory Tools ---
+AGENT_TASKS_FILE_DEFAULT = "./agent_environment/agent/agent_tasks.json"
+
+@tool
+def manage_agent_tasks(action: str, task_description: str | None = None, task_id: int | None = None, tasks_file: str = AGENT_TASKS_FILE_DEFAULT) -> str:
+    """
+    Manages an agent's to-do list stored in a JSON file.
+    Actions: "add", "remove", "list", "complete", "uncomplete", "clear".
+
+    Args:
+        action: The operation to perform: "add", "remove", "list", "complete", "uncomplete", "clear".
+        task_description: The description of the task (required for "add").
+        task_id: The ID of the task (required for "remove", "complete", "uncomplete").
+        tasks_file: Path to the JSON file storing tasks.
+
+    Returns:
+        A message indicating the result of the action.
+    """
+    action = action.lower()
+    valid_actions = ["add", "remove", "list", "complete", "uncomplete", "clear"]
+    if action not in valid_actions:
+        return f"Error: Invalid action '{action}'. Valid actions are: {', '.join(valid_actions)}."
+
+    # Ensure tasks directory exists
+    try:
+        os.makedirs(os.path.dirname(tasks_file), exist_ok=True)
+    except Exception as e:
+        return f"Error creating directory for tasks file: {str(e)}"
+        
+    # Load tasks
+    tasks = []
+    if os.path.exists(tasks_file):
+        try:
+            with open(tasks_file, "r", encoding="utf-8") as f:
+                tasks = json.load(f)
+        except json.JSONDecodeError:
+            return f"Error: Tasks file '{tasks_file}' is corrupted. Could not decode JSON."
+        except Exception as e:
+            return f"Error reading tasks file '{tasks_file}': {str(e)}"
+
+    # Perform action
+    if action == "add":
+        if not task_description:
+            return "Error: Task description is required for 'add' action."
+        new_id = max(task.get("id", 0) for task in tasks) + 1 if tasks else 1
+        tasks.append({"id": new_id, "description": task_description, "status": "pending", "created_at": datetime.now().isoformat()})
+        message = f"Task '{task_description}' added with ID {new_id}."
+    
+    elif action == "list":
+        if not tasks:
+            return "No tasks in the list."
+        output = ["Current tasks:"]
+        for task in tasks:
+            output.append(f"- ID {task['id']}: {task['description']} (Status: {task['status']})")
+        return "\n".join(output)
+
+    elif action == "clear":
+        tasks = []
+        message = "All tasks have been cleared."
+
+    else: # Actions requiring task_id: remove, complete, uncomplete
+        if task_id is None:
+            return f"Error: Task ID is required for '{action}' action."
+        
+        task_found = False
+        for task in tasks:
+            if task.get("id") == task_id:
+                task_found = True
+                if action == "remove":
+                    tasks.remove(task)
+                    message = f"Task ID {task_id} removed."
+                elif action == "complete":
+                    task["status"] = "completed"
+                    task["completed_at"] = datetime.now().isoformat()
+                    message = f"Task ID {task_id} marked as completed."
+                elif action == "uncomplete":
+                    task["status"] = "pending"
+                    if "completed_at" in task:
+                        del task["completed_at"]
+                    message = f"Task ID {task_id} marked as pending."
+                break
+        if not task_found:
+            return f"Error: Task ID {task_id} not found."
+
+    # Save tasks
+    try:
+        with open(tasks_file, "w", encoding="utf-8") as f:
+            json.dump(tasks, f, indent=2)
+        return message
+    except Exception as e:
+        return f"Error writing tasks file '{tasks_file}': {str(e)}"
+
+# --- Agent Logging Tools ---
+LOG_FILES_DIR = "./agent_environment/agent/agent_log_files/" # As defined in prompt
+
+@tool
+def retrieve_agent_log_segment(
+    filename: str,
+    lines_from_end: int | None = None,
+    lines_from_start: int | None = None,
+    keyword: str | None = None,
+    case_sensitive_keyword: bool = False,
+    log_dir: str = LOG_FILES_DIR
+) -> str:
+    """
+    Retrieves segments or filtered content from a specified agent log file.
+
+    Args:
+        filename: The name of the log file within the agent's log directory.
+        lines_from_end: Optional. Number of lines to retrieve from the end of the file (tail).
+        lines_from_start: Optional. Number of lines to retrieve from the start of the file (head).
+                           If both start and end are given, end takes precedence for simple tail/head.
+                           If keyword is also used, this can define the initial set of lines to filter.
+        keyword: Optional. A keyword to filter lines by. Only lines containing this keyword will be returned.
+        case_sensitive_keyword: Optional. If True, keyword search is case-sensitive. Defaults to False.
+        log_dir: The base directory for agent logs.
+
+    Returns:
+        The requested log segment as a string, or an error message.
+    """
+    filepath = os.path.join(log_dir, filename)
+    if not os.path.exists(filepath):
+        return f"Error: Log file not found at {filepath}."
+    if not os.path.isfile(filepath):
+        return f"Error: {filepath} is not a file."
+
+    try:
+        with open(filepath, "r", encoding="utf-8", errors='ignore') as f:
+            all_lines = f.readlines()
+
+        if not all_lines:
+            return f"Log file '{filename}' is empty."
+
+        # Apply keyword filter first if present
+        if keyword:
+            if not case_sensitive_keyword:
+                keyword_to_search = keyword.lower()
+                filtered_lines = [line for line in all_lines if keyword_to_search in line.lower()]
+            else:
+                keyword_to_search = keyword
+                filtered_lines = [line for line in all_lines if keyword_to_search in line]
+            
+            if not filtered_lines:
+                 return f"No lines containing keyword '{keyword}' found in '{filename}'."
+            lines_to_process = filtered_lines
+        else:
+            lines_to_process = all_lines
+
+        # Apply line count limits
+        if lines_from_end is not None and lines_from_end > 0:
+            output_lines = lines_to_process[-lines_from_end:]
+        elif lines_from_start is not None and lines_from_start > 0:
+            output_lines = lines_to_process[:lines_from_start]
+        else: # No specific line count, return all (potentially keyword-filtered) lines
+            output_lines = lines_to_process
+        
+        if not output_lines: # Could happen if keyword filtered everything or counts were off
+            return f"No matching log entries found in '{filename}' with the specified criteria."
+            
+        return f"Log segment from '{filename}':\n" + "".join(output_lines)
+
+    except Exception as e:
+        return f"Error retrieving log segment from {filepath}: {str(e)}"
