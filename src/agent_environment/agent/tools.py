@@ -1228,3 +1228,30 @@ def retrieve_agent_log_segment(
 
     except Exception as e:
         return f"Error retrieving log segment from {filepath}: {str(e)}"
+    
+@tool
+def ask_user_for_input(prompt_message: str) -> str:
+    """
+    Prompts the human user for input and returns their response.
+    This tool should be used when the agent needs clarification, a decision,
+    or information it cannot find on its own.
+
+    Args:
+        prompt_message: The question or message to display to the user.
+
+    Returns:
+        A string containing the user's typed response.
+        The response will be prefixed with "User input: ".
+    """
+    print(f"\nAGENT NEEDS YOUR INPUT:")
+    print(prompt_message)
+    
+    try:
+        user_response = input("Your response: ")
+        return f"User input: {user_response}"
+    except EOFError:
+        return "User input: [No input provided - EOFError]. The user may have terminated the input stream."
+    except KeyboardInterrupt:
+        return "User input: [Input interrupted by user - KeyboardInterrupt]. The agent should probably stop or try a different approach."
+    except Exception as e:
+        return f"User input: [Error during input: {str(e)}]. Something went wrong while trying to get user input."
