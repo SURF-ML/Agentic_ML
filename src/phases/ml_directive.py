@@ -1,10 +1,13 @@
-def MLRepoDirective():
+from typing import List, Dict
 
-    def __init__(self, initial_prompt_details: dict):
+class Directive:
+
+    def __init__(self, initial_prompt_details: Dict):
         self.root_path = initial_prompt_details.get('project_path', 'N/A')
-        self.scratchpad_file = initial_prompt_details.get('scratchpad_path', f'{self.root_path}/agent/files/scratchpad.txt')
+        self.scratchpad_file = initial_prompt_details.get('scratchpad_path', f'{self.root_path}/agent/scratchpad.txt')
+        self.agent_tasks_file = initial_prompt_details.get('agnet_task_path', f'{self.root_path}/agent/agent_tasks.json')
 
-        self.initial_prompt = f"""Initial User Prompt Summary:
+        self.initial_prompt = f"""Initial User Prompt:
             Project: {initial_prompt_details.get('project_name', 'N/A')}
             Project root path: {initial_prompt_details.get('project_path', 'N/A')}
             Task: {initial_prompt_details.get('task_description', 'N/A')}
@@ -13,6 +16,7 @@ def MLRepoDirective():
             Target Framework: {initial_prompt_details.get('target_framework', 'N/A')}
             Target Input Tensor Shape: {initial_prompt_details.get('target_tensor_shapes_input', 'N/A')}
             Scratchpad path: {self.scratchpad_file}
+            Agent Tasks Json: {self.agent_tasks_file}
 
             Assume at all times that you are working under {initial_prompt_details.get('project_path', 'N/A')},
             For instance, data/interim/ is found under {initial_prompt_details.get('project_path', 'N/A')}/data/interim and
@@ -20,10 +24,15 @@ def MLRepoDirective():
             to inspect how your working directory looks like.
 
             If you encounter an unrecoverable error, are unsure about a step, or need clarification, use the `ask_user_for_input` tool.
-            Use `manage_agent_tasks` to add, track, and complete tasks corresponding to the steps below."""
+            Use `manage_agent_tasks` to add, track, and complete tasks corresponding to the steps below.
+            
+            Use the scratchpad.txt, which is found under {self.root_path}/agent/scratchpad.txt to read detailed initial instructions and to log your progress, findings, and plans.
+            Use `manage_agent_tasks` to break down these steps into smaller, manageable tasks and track their completion. The path to the agent tasks file is {self.agent_tasks_file}."""
 
+    def get_directives(self, directive: str="eda_preprocessing_directive") -> List[str]:
+        return [self.eda_preprocessing_directive()]
 
-    def define_eda_preprocessing_directive(self, initial_prompt_details: dict) -> str:
+    def eda_preprocessing_directive(self) -> str:
         """
         Constructs the detailed agent directive string for EDA and preprocessing.
         Args:
@@ -38,8 +47,6 @@ def MLRepoDirective():
         Your current objective: Phase 1 - EDA and Data Preprocessing.
 
         Follow these general steps, using your available tools and reasoning capabilities.
-        Use the Scratchpad to read detailed initial instructions and to log your progress, findings, and plans.
-        Use `manage_agent_tasks` to break down these steps into smaller, manageable tasks and track their completion.
 
         1.  **Understand Task & Locate Data:**
             * Add a task to `manage_agent_tasks` like "Understand task and locate data".
@@ -52,11 +59,11 @@ def MLRepoDirective():
             * Add relevant tasks to `manage_agent_tasks` (e.g., "List project root directory", "Identify sample files", "Inspect sample files", "Summarize inspection findings").
             * Use `list_directory_contents` on the Project root path (recursive, max_depth 2-3).
             * Identify a few sample files. For each, use `inspect_file_type_and_structure`.
-            * Summarize and log findings in the scratchpad.
+            * Summarize and log findings in the scratchpad.txt.
             * Mark tasks as "complete" in `manage_agent_tasks` upon successful completion.
 
         3.  **Plan and Execute EDA:**
-            * Add tasks to `manage_agent_tasks` such as: "Plan EDA steps", "Generate EDA script", "Save EDA script", "Update requirements.txt if new libraries are needed", "Execute EDA script", "Handle EDA script errors if any".
+            * Add tasks to `manage_agent_tasks`.
             * Based on `Data Type` and inspection, plan EDA. If the plan is unclear or you need to make choices with significant impact (e.g., how to handle a large amount of missing data).
             * Generate Python EDA script, save to `{self.root_path}/scripts/exploratory_data_analysis.py` using `write_file`.
                 * The script should print summaries and save plots to `{self.root_path}/results/plots/eda/` (use `create_directory` if the path doesn't exist).
@@ -73,20 +80,23 @@ def MLRepoDirective():
 
         4.  **Plan Preprocessing:**
             * Based on EDA results and `Target Input Tensor Shape`, plan the necessary preprocessing steps.
-            * If EDA findings are ambiguous for planning or if choices about preprocessing strategy are critical and uncertain (e.g., choosing between different normalization techniques), use `ask_user_for_input` to get user feedback or decisions.
-            * Plan a manifest file (e.g., `{self.root_path}/manifests/phase_1/dataset_manifest.json`) if it would be useful for creating a Dataloader for the specified ML framework: {initial_prompt_details.get('target_framework', 'the specified ML framework')}. This file typically lists data samples and their corresponding labels or attributes.
-            * Log your preprocessing plan in the scratchpad.
+            * If EDA findings are ambiguous for planning or if choices about preprocessing strategy are critical and uncertain, use `ask_user_for_input` to get user feedback or decisions.
+            * Plan a manifest file (e.g., `{self.root_path}/manifests/phase_1/dataset_manifest.json`). 
+            * Log your preprocessing plan in the scratchpad.txt.
             * Mark tasks as "complete" in `manage_agent_tasks`.
 
         5.  **Conclude Phase 1:**
-            * Ensure all planned tasks are "complete". If any are outstanding, address them or make a note in the scratchpad about why they were not completed.
-            * Summarize all actions taken, key findings from EDA, the current state of the data, and the preprocessing plan in the Scratchpad (`update_scratchpad`).
+            * Ensure all planned tasks are "complete". If any are outstanding, address them or make a note in the scratchpad.txt about why they were not completed.
+            * Summarize all actions taken, key findings from EDA, the current state of the data, and the preprocessing plan in the scratchpad.txt (`update_scratchpad`).
             * Indicate that Phase 1 (EDA and Data Preprocessing) is complete and you are ready for the next phase.
 
-        Always provide clear reasoning for your actions. Use the scratchpad for detailed logging of your progress, observations, and plans.
+        Always provide clear reasoning for your actions. Use the scratchpad.txt for detailed logging of your progress, observations, and plans.
         Leverage `manage_agent_tasks` to structure your work within each phase and track your sub-tasks diligently.
         Do not hesitate to use `ask_user_for_input` when you face ambiguity, critical errors you cannot resolve, or need a decision that impacts the workflow.
-        Start by reading the scratchpad for any existing notes and start by reading the manifest from the previous phase under {self.root_path}/manifests/phase_0/dataset_manifest.json, then list your initial high-level tasks for this phase using `manage_agent_tasks` (e.g., add tasks for steps 1 through 5).
+        Start by reading the scratchpad.txt and the agent_tasks.json for any existing notes and start by reading the manifest from the previous phase under {self.root_path}/manifests/phase_0/dataset_manifest.json, 
+        then list your initial high-level tasks for this phase using `manage_agent_tasks` (e.g., add tasks for steps 1 through 5).
+
+        Inspect the {self.root_path}/src/ subdirectories and/or files, some default empty files have been set up for you. You can use these if you need.
         """
 
 # def define_scripting_testing_directive(initial_prompt_details: dict) -> str:

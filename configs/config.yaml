@@ -1,11 +1,10 @@
 # config.yaml
 llm:
   provider: "ollama"
-  model_id: "ollama_chat/qwen3:14b" #Qwen/Qwen3-4B" # Or your preferred model
-  # Optional: additional arguments for TransformersModel constructor
+  model_id: "ollama_chat/qwen3:1.7b" #Qwen/Qwen3-14B"
   transformers_model_kwargs:
     kwargs: # These are passed to AutoModelForCausalLM.from_pretrained
-      # device_map: "auto" # Example
+      device_map: "auto" # Example
       # torch_dtype: "auto" # Example
       max_new_tokens: 16384
 
@@ -19,10 +18,7 @@ agent:
     - "os"
     - "json"
     - "logging"
-    # Add more as needed by your agent's generated code
 
 paths:
-  initial_prompt_json: "../configs/initial_project_config.json" # Path to your JSON file with initial prompt details
+  initial_prompt_json: "../configs/initial_project_config.json" # Path to JSON file with initial prompt details
 
-# Optional: You can even define the user query here
-# user_query: "This is a query from the config file. Set up a simple project."

@@ -1066,10 +1066,9 @@ def search_google_scholar(query: str, max_results: int = 5) -> str:
 
 
 # --- Agent Specific/Memory Tools ---
-AGENT_TASKS_FILE_DEFAULT = "./agent_environment/agent/agent_tasks.json"
 
 @tool
-def manage_agent_tasks(action: str, task_description: str | None = None, task_id: int | None = None, tasks_file: str = AGENT_TASKS_FILE_DEFAULT) -> str:
+def manage_agent_tasks(action: str, task_description: str | None = None, task_id: int | None = None, tasks_file: str | None = None) -> str:
     """
     Manages an agent's to-do list stored in a JSON file.
     Actions: "add", "remove", "list", "complete", "uncomplete", "clear".
@@ -1157,9 +1156,6 @@ def manage_agent_tasks(action: str, task_description: str | None = None, task_id
     except Exception as e:
         return f"Error writing tasks file '{tasks_file}': {str(e)}"
 
-# --- Agent Logging Tools ---
-LOG_FILES_DIR = "./agent_environment/agent/agent_log_files/" # As defined in prompt
-
 @tool
 def retrieve_agent_log_segment(
     filename: str,
@@ -1167,7 +1163,7 @@ def retrieve_agent_log_segment(
     lines_from_start: int | None = None,
     keyword: str | None = None,
     case_sensitive_keyword: bool = False,
-    log_dir: str = LOG_FILES_DIR
+    log_dir: str | None = None
 ) -> str:
     """
     Retrieves segments or filtered content from a specified agent log file.

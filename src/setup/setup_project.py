@@ -1,5 +1,18 @@
 import os
-import argparse # Import argparse
+import json
+import argparse 
+import yaml
+import logging
+
+from utils.util_functions import load_config
+
+logger = logging.getLogger(__name__)
+if not logger.hasHandlers(): # Avoid adding multiple handlers if imported multiple times
+    handler = logging.StreamHandler()
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+logger.setLevel(logging.INFO)
 
 def create_project_structure(root_dir): # root_dir is now directly the project name
     """
@@ -83,6 +96,18 @@ def create_project_structure(root_dir): # root_dir is now directly the project n
             "trained_models": None,
             "logs": None,
             "plots": None
+        
+        },
+        "manifests": {
+            "phase_0": None,
+            "phase_1": None,
+            "phase_2": None,
+            "phase_3": None,
+            "phase_4": None,
+        },
+        "agent": {
+            "scratchpad.txt": "Init Agent Scratch Pad.",
+            "agent_tasks.json": "{}"
         },
         "docs": None
     }
@@ -112,15 +137,26 @@ def create_project_structure(root_dir): # root_dir is now directly the project n
 
     print("\nProject structure created successfully!")
     print(f"Next steps for the agent might involve populating 'requirements.txt' and then running 'pip install -r {os.path.join(root_dir, 'requirements.txt')}'.")
-    print("The agent should then start implementing the functionalities outlined in the 'src/' directory, guided by the user's prompt and its 'dos_and_donts.md'.")
+    print("The agent should then start implementing the functionalities outlined in the 'src/' directory, guided by the user's prompt.")
 
-if __name__ == "__main__":
+
+def main():
     parser = argparse.ArgumentParser(description="Create a skeletal structure for a new Machine Learning project.")
-    parser.add_argument("--project_name", help="The name of the project root directory to be created.")
-    # Example of an optional argument with a default value if needed in the future:
-    # parser.add_argument("--template", help="Specify a project template", default="default")
+    parser.add_argument("--config", help="The name of the project root directory to be created.")
 
     args = parser.parse_args()
 
+    try:
+        config = load_config(args.config)
+    except Exception:
+        logger.critical(f"Failed to load configuration from {args.config}. Exiting.")
+        return
+
+    with open(config.get('paths').get('initial_prompt_json'), "r") as f:
+        project_json = json.load(f)
+
     # Use the project_name from the command-line arguments
-    create_project_structure(args.project_name)
+    create_project_structure(project_json["project_path"])
+
+if __name__ == "__main__":
+    main()

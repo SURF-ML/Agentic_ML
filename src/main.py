@@ -3,6 +3,8 @@ import argparse
 import yaml 
 from typing import Dict, Any, List, Optional
 
+from utils.util_functions import load_config
+
 # --- Custom Tools Import ---
 from agent_environment.agent.tools import (
     create_directory, write_file, append_to_file, read_file_content,
@@ -10,7 +12,9 @@ from agent_environment.agent.tools import (
     execute_python_script, execute_shell_command, install_python_package,
     browse_webpage, search_arxiv, search_github_repositories,
     read_scratchpad, update_scratchpad, inspect_file_type_and_structure,
-    search_wikipedia, log_agent_message, list_agent_log_files, read_scratchpad,
+    search_wikipedia, read_scratchpad, ask_user_for_input, 
+    retrieve_agent_log_segment, manage_agent_tasks, check_python_package_version, 
+    list_installed_python_packages, grep_directory, zip_files, unzip_file,
     update_scratchpad
 )
 ALL_CUSTOM_TOOLS: List[callable] = [
@@ -19,17 +23,21 @@ ALL_CUSTOM_TOOLS: List[callable] = [
     execute_python_script, execute_shell_command, install_python_package,
     browse_webpage, search_arxiv, search_github_repositories,
     read_scratchpad, update_scratchpad, inspect_file_type_and_structure,
-    search_wikipedia, log_agent_message, list_agent_log_files
+    search_wikipedia, read_scratchpad, ask_user_for_input, 
+    retrieve_agent_log_segment, manage_agent_tasks, check_python_package_version, 
+    list_installed_python_packages, grep_directory, zip_files, unzip_file,
+    update_scratchpad
 ]
 DATA_PHASE_TOOLS: List[callable] = [
     create_directory, write_file, append_to_file, read_file_content,
     list_directory_contents, delete_file_or_directory, replace_text_in_file,
     execute_python_script, execute_shell_command, install_python_package,
     browse_webpage, read_scratchpad, update_scratchpad, inspect_file_type_and_structure,
-    log_agent_message, list_agent_log_files
+    ask_user_for_input, retrieve_agent_log_segment, manage_agent_tasks, check_python_package_version, 
+    list_installed_python_packages, grep_directory, zip_files, unzip_file
 ]
 
-from phases.data_phase.data_objective import define_eda_preprocessing_directive
+from phases.ml_directive import Directive
 
 from smolagents import CodeAgent
 
@@ -38,72 +46,32 @@ from agent_orchestrator import AgentOrchestrator
 # Logger will be configured in main after parsing args for log level
 logger = logging.getLogger(__name__)
 
-def load_config(config_path: str) -> Dict[str, Any]:
-    """Loads configuration from a YAML file."""
-    try:
-        with open(config_path, 'r') as f:
-            config = yaml.safe_load(f)
-        logger.info(f"Successfully loaded configuration from: {config_path}")
-        return config
-    except FileNotFoundError:
-        logger.error(f"Configuration file not found at: {config_path}")
-        raise
-    except yaml.YAMLError as e:
-        logger.error(f"Error parsing YAML configuration file {config_path}: {e}")
-        raise
-    except Exception as e:
-        logger.error(f"An unexpected error occurred while loading config from {config_path}: {e}")
-        raise
+def run_phases(orchestrator: AgentOrchestrator, 
+               directives: List[str], 
+               final_agent_config: dict,
+               phases_tools: List[List[str]]) -> List[dict]:
 
+    results = []
+    for directive, phase_tools in zip(directives, phases_tools):
+        logger.debug(f"Generated directive for agent:\n{directive}")
+        phase_result = run_single_phase(orchestrator, final_agent_config, directive, phase_tools)
+        results.append(phase_result)
+    
+    return results
 
-# --- Directive Generation (Example) ---
-def generate_initial_directive(prompt_details: Optional[Dict[str, Any]], user_query: str) -> str:
-    """
-    Generates a directive for the agent based on initial details and a user query.
-    """
-    # This function remains the same as before
-    if prompt_details:
-        directive = f"""
-        Project Context (loaded from initial prompt details):
-        Project Name: {prompt_details.get('project_name', 'N/A')}
-        Task Description: {prompt_details.get('task_description', 'N/A')}
-        Data Type: {prompt_details.get('data_type', 'N/A')}
-        Target Framework: {prompt_details.get('target_framework', 'N/A')}
-
-        User's Current Request:
-        {user_query}
-
-        Please proceed with the user's request, keeping the project context in mind.
-        Use your available tools and reasoning capabilities.
-        Log your major steps and findings.
-        """
-    else:
-        directive = f"""
-        User's Current Request:
-        {user_query}
-
-        Please proceed with the user's request using your available tools and reasoning capabilities.
-        Log your major steps and findings.
-        """
-    return directive.strip()
-
-def run_data_phase(orchestrator: AgentOrchestrator, 
+def run_single_phase(orchestrator: AgentOrchestrator, 
                    final_agent_config: dict, 
                    directive: str,
-                   initial_prompt_file: dict) -> CodeAgent:
+                   phase_tools: List[str]) -> dict:
     try:
         orchestrator.setup_agent(
-            list_of_tools=DATA_PHASE_TOOLS,
+            list_of_tools=phase_tools,
             agent_class=CodeAgent,
             agent_config=final_agent_config
         )
     except RuntimeError as e:
         logger.critical(f"Failed to set up agent via orchestrator: {e}", exc_info=True)
         return
-
-    directive = f"directive\n\n{define_eda_preprocessing_directive(initial_prompt_file)}"
-
-    logger.debug(f"Generated directive for agent:\n{directive}")
 
     logger.info("Starting agent execution phase...")
     final_result = orchestrator.run_agent_phase(directive=directive)
@@ -114,6 +82,7 @@ def run_data_phase(orchestrator: AgentOrchestrator,
     else:
         logger.info(f"Agent phase completed. Final output (or summary): {str(final_result)[:1000]}")
 
+    return final_result
 
 def run_ml_pipeline_agent(config: Dict[str, Any]):
     """
@@ -127,7 +96,7 @@ def run_ml_pipeline_agent(config: Dict[str, Any]):
     paths_config = config.get('paths', {})
     initial_prompt_filepath = paths_config.get('initial_prompt_json', 'initial_project_config.json') 
 
-    if orchestrator.load_initial_prompt_from_json(initial_prompt_filepath):
+    if orchestrator.load_from_json(initial_prompt_filepath):
         prompt_details = orchestrator.get_initial_prompt_details()
         logger.info(f"Loaded initial prompt details for project: {prompt_details.get('project_name', 'N/A') if prompt_details else 'N/A'}")
     else:
@@ -147,20 +116,15 @@ def run_ml_pipeline_agent(config: Dict[str, Any]):
     # Merge default with YAML config, YAML takes precedence
     final_agent_config = {**default_agent_settings, **agent_config_from_yaml}
 
-    #Define the User's Query / Initial Task for the Agent
-    user_query = prompt_details["task_description"]
+    ml_directives = Directive(final_agent_config)
 
-    directive = generate_initial_directive(prompt_details, user_query)
-    run_data_phase(orchestrator, final_agent_config, directive, prompt_details)
-
-    logger.info("Starting agent execution phase...")
-    final_result = orchestrator.run_agent_phase(directive=directive)
-
-    if isinstance(final_result, dict) and final_result.get("error"):
-        logger.error(f"Agent phase execution failed: {final_result.get('message')}")
-        logger.debug(f"Failure details: {final_result.get('details')}")
+    final_results = run_phases(orchestrator, ml_directives.get_directives(), final_agent_config, [DATA_PHASE_TOOLS])
+    last_result = final_results[-1]
+    if isinstance(last_result, dict) and last_result.get("error"):
+        logger.error(f"Agent phase execution failed: {last_result.get('message')}")
+        logger.debug(f"Failure details: {last_result.get('details')}")
     else:
-        logger.info(f"Agent phase completed. Final output (or summary): {str(final_result)[:1000]}")
+        logger.info(f"Agent phase completed. Final output (or summary): {str(last_result)[:1000]}")
 
     logger.info("ML Pipeline Agent run finished.")
 

@@ -56,9 +56,9 @@ class AgentOrchestrator:
             elif self.llm_provider=="ollama":
                     
                 model_instance = LiteLLMModel(
-                    model_id=self.llm_model_id, # This model is a bit weak for agentic behaviours though
-                    api_base="http://localhost:11434", # replace with 127.0.0.1:11434 or remote open-ai compatible server if necessary
-                    api_key="YOUR_API_KEY", # replace with API key if necessary
+                    model_id=self.llm_model_id, 
+                    api_base="http://localhost:11434",
+                    api_key="YOUR_API_KEY", 
                     num_ctx=self.llm_provider_config.get("kwargs").get("max_new_tokens"), # ollama default is 2048 which will fail horribly. 8192 works for easy tasks, more is better. Check https://huggingface.co/spaces/NyxKrage/LLM-Model-VRAM-Calculator to calculate how much VRAM this will need for the selected model.
                 )
             
@@ -68,7 +68,7 @@ class AgentOrchestrator:
             logger.error(f"Error initializing Transformer Model for model {self.llm_model_id}: {e}", exc_info=True)
             raise RuntimeError(f"Transformer Model initialization failed for model {self.llm_model_id}: {e}")
 
-    def load_initial_prompt_from_json(self, filepath: str) -> bool:
+    def load_from_json(self, filepath: str) -> bool:
         """
         Loads initial prompt details from a specified JSON file and stores them.
 
@@ -95,6 +95,7 @@ class AgentOrchestrator:
             logger.error(f"An unexpected error occurred while loading prompt from {filepath}: {e}", exc_info=True)
             self.initial_prompt_details = None
             return False
+
 
     def get_initial_prompt_details(self) -> Optional[Dict[str, Any]]:
         """
