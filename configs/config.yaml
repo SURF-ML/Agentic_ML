@@ -1,7 +1,7 @@
 # config.yaml
 llm:
   provider: "ollama"
-  model_id: "ollama_chat/qwen3:1.7b" #Qwen/Qwen3-14B"
+  model_id: "ollama_chat/qwen3:32b" #Qwen/Qwen3-14B" #ollama_chat/qwen3:14b
   transformers_model_kwargs:
     kwargs: # These are passed to AutoModelForCausalLM.from_pretrained
       device_map: "auto" # Example

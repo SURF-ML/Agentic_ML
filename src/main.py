@@ -1,3 +1,4 @@
+import os
 import logging
 import argparse 
 import yaml 
@@ -12,8 +13,7 @@ from agent_environment.agent.tools import (
     execute_python_script, execute_shell_command, install_python_package,
     browse_webpage, search_arxiv, search_github_repositories,
     read_scratchpad, update_scratchpad, inspect_file_type_and_structure,
-    search_wikipedia, read_scratchpad, ask_user_for_input, 
-    retrieve_agent_log_segment, manage_agent_tasks, check_python_package_version, 
+    search_wikipedia, read_scratchpad, ask_user_for_input, check_python_package_version, 
     list_installed_python_packages, grep_directory, zip_files, unzip_file,
     update_scratchpad
 )
@@ -23,8 +23,7 @@ ALL_CUSTOM_TOOLS: List[callable] = [
     execute_python_script, execute_shell_command, install_python_package,
     browse_webpage, search_arxiv, search_github_repositories,
     read_scratchpad, update_scratchpad, inspect_file_type_and_structure,
-    search_wikipedia, read_scratchpad, ask_user_for_input, 
-    retrieve_agent_log_segment, manage_agent_tasks, check_python_package_version, 
+    search_wikipedia, read_scratchpad, ask_user_for_input, check_python_package_version, 
     list_installed_python_packages, grep_directory, zip_files, unzip_file,
     update_scratchpad
 ]
@@ -33,7 +32,7 @@ DATA_PHASE_TOOLS: List[callable] = [
     list_directory_contents, delete_file_or_directory, replace_text_in_file,
     execute_python_script, execute_shell_command, install_python_package,
     browse_webpage, read_scratchpad, update_scratchpad, inspect_file_type_and_structure,
-    ask_user_for_input, retrieve_agent_log_segment, manage_agent_tasks, check_python_package_version, 
+    ask_user_for_input, check_python_package_version, 
     list_installed_python_packages, grep_directory, zip_files, unzip_file
 ]
 
@@ -103,6 +102,12 @@ def run_ml_pipeline_agent(config: Dict[str, Any]):
         logger.warning(f"Could not load initial prompt details from {initial_prompt_filepath}. Proceeding without them.")
         prompt_details = None
 
+    # Where the agent will be working from
+    work_dir = os.path.join(prompt_details.get("project_path"), prompt_details.get("project_name"))
+    
+    logger.info(f"Agent Model will be working from: {work_dir}")
+    os.chdir(work_dir)
+
     agent_config_from_yaml = config.get('agent', {})
     # Default agent settings, can be overridden by YAML
     default_agent_settings = {
@@ -116,9 +121,21 @@ def run_ml_pipeline_agent(config: Dict[str, Any]):
     # Merge default with YAML config, YAML takes precedence
     final_agent_config = {**default_agent_settings, **agent_config_from_yaml}
 
-    ml_directives = Directive(final_agent_config)
+    ml_directives = Directive(prompt_details)
+    directives = ml_directives.get_directives()
+    # Should be the same length as ml_directives
+    tools_needed = [DATA_PHASE_TOOLS, DATA_PHASE_TOOLS]
 
-    final_results = run_phases(orchestrator, ml_directives.get_directives(), final_agent_config, [DATA_PHASE_TOOLS])
+    if not len(tools_needed) == len(directives):
+        logger.error(f"Each phase needs its own set of tools defined.")
+        logger.info(f"Using all the tools instead. Be aware of the agent having access to all tooling in each phase.")
+        tools_needed = [ALL_CUSTOM_TOOLS for _ in directives]
+
+    final_results = run_phases(orchestrator, 
+                               directives, 
+                               final_agent_config,
+                               tools_needed)
+    
     last_result = final_results[-1]
     if isinstance(last_result, dict) and last_result.get("error"):
         logger.error(f"Agent phase execution failed: {last_result.get('message')}")

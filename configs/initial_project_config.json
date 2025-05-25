@@ -1,9 +1,8 @@
 {
-  "project_name": "ConfigDrivenProject",
-  "project_path": "../agent_working_environment/",
+  "project_name": "ML_Agency",
+  "project_path": "../agent_working_environment",
   "task_description": "I have a medical csv dataset, let's create a machine learning pipeline to train a simple pytorch model.",
   "data_type": "csv",
   "target_framework": "torch",
-  "data_folder_path_from_user": "../data/raw_data/",
-  "target_tensor_shapes_input": "unknown"
+  "data_folder_path_from_user": "../raw_data"
 }

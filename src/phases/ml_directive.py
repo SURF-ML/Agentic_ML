@@ -1,38 +1,39 @@
+import os
 from typing import List, Dict
 
 class Directive:
 
     def __init__(self, initial_prompt_details: Dict):
-        self.root_path = initial_prompt_details.get('project_path', 'N/A')
-        self.scratchpad_file = initial_prompt_details.get('scratchpad_path', f'{self.root_path}/agent/scratchpad.txt')
-        self.agent_tasks_file = initial_prompt_details.get('agnet_task_path', f'{self.root_path}/agent/agent_tasks.json')
+        self.root_path = "."
+        self.scratchpad_file = initial_prompt_details.get('scratchpad_path', f"{os.path.join(self.root_path, 'agent/scratchpad.txt')}")
 
         self.initial_prompt = f"""Initial User Prompt:
             Project: {initial_prompt_details.get('project_name', 'N/A')}
-            Project root path: {initial_prompt_details.get('project_path', 'N/A')}
             Task: {initial_prompt_details.get('task_description', 'N/A')}
             Data Type: {initial_prompt_details.get('data_type', 'N/A')}
-            Raw Data Location: '{initial_prompt_details.get('data_folder_path_from_user', 'N/A')}'
+            Raw Data Location: '{initial_prompt_details.get('data_folder_path_from_user', '../raw_data')}'
             Target Framework: {initial_prompt_details.get('target_framework', 'N/A')}
-            Target Input Tensor Shape: {initial_prompt_details.get('target_tensor_shapes_input', 'N/A')}
             Scratchpad path: {self.scratchpad_file}
-            Agent Tasks Json: {self.agent_tasks_file}
 
-            Assume at all times that you are working under {initial_prompt_details.get('project_path', 'N/A')},
-            For instance, data/interim/ is found under {initial_prompt_details.get('project_path', 'N/A')}/data/interim and
-            src/ is found under {initial_prompt_details.get('project_path', 'N/A')}/src, if you are unsure you can use `list_directory_contents`
+            Assume at all times that you are working under "./",
+            For instance, data/interim/ is found under {self.root_path}/data/interim and
+            src/ is found under {self.root_path}/src, if you are unsure you can use `list_directory_contents`
             to inspect how your working directory looks like.
 
             If you encounter an unrecoverable error, are unsure about a step, or need clarification, use the `ask_user_for_input` tool.
-            Use `manage_agent_tasks` to add, track, and complete tasks corresponding to the steps below.
             
             Use the scratchpad.txt, which is found under {self.root_path}/agent/scratchpad.txt to read detailed initial instructions and to log your progress, findings, and plans.
-            Use `manage_agent_tasks` to break down these steps into smaller, manageable tasks and track their completion. The path to the agent tasks file is {self.agent_tasks_file}."""
+            Log as much as you can.
+
+            If you are creating code, let the code be written as cleanly as possible. Use functions, keep the code modular, use typing and
+            adhere to high software engineering standards.
+            """
 
     def get_directives(self, directive: str="eda_preprocessing_directive") -> List[str]:
-        return [self.eda_preprocessing_directive()]
-
-    def eda_preprocessing_directive(self) -> str:
+        return [self.inspect_and_understand_data_1(), 
+                self.eda_preprocessing_directive_2()]
+    
+    def inspect_and_understand_data_1(self) -> str:
         """
         Constructs the detailed agent directive string for EDA and preprocessing.
         Args:
@@ -44,26 +45,63 @@ class Directive:
         return f"""
         {self.initial_prompt}
 
-        Your current objective: Phase 1 - EDA and Data Preprocessing.
+        Your current objective: Phase 1 - Understand Task and Data Inspection.
 
-        Follow these general steps, using your available tools and reasoning capabilities.
+        Follow these general steps, using your available tools and reasoning capabilities. Finish this phase to the best
+        of your ability! Keep in mind this is a high stakes project, everything you do will have impact further down the line.
 
         1.  **Understand Task & Locate Data:**
             * Add a task to `manage_agent_tasks` like "Understand task and locate data".
             * The Raw Data Location contains the data you'll work with.
             * Confirm this path. If it seems unusable, incorrect, or missing, first use `ask_user_for_input` to request clarification.
             * Log any understanding and stuff worth remembering using `update_scratchpad` tool.
-            * Mark the task as "complete" in `manage_agent_tasks`.
 
         2.  **Initial Data Inspection:**
             * Add relevant tasks to `manage_agent_tasks` (e.g., "List project root directory", "Identify sample files", "Inspect sample files", "Summarize inspection findings").
             * Use `list_directory_contents` on the Project root path (recursive, max_depth 2-3).
             * Identify a few sample files. For each, use `inspect_file_type_and_structure`.
             * Summarize and log findings in the scratchpad.txt.
-            * Mark tasks as "complete" in `manage_agent_tasks` upon successful completion.
 
-        3.  **Plan and Execute EDA:**
-            * Add tasks to `manage_agent_tasks`.
+        3.  **Plan Preprocessing:**
+            * Based on the previous results, plan the necessary preprocessing steps.
+            * If the current findings are ambiguous for planning or if choices about preprocessing strategy are critical and uncertain, use `ask_user_for_input` to get user feedback or decisions.
+            * Plan a manifest file (e.g., `{self.root_path}/manifests/phase_1/manifest.json`). 
+            * Log your preprocessing plan in the scratchpad.txt.
+            
+        3.  **Conclude Phase 1:**
+            * Ensure all planned tasks are "complete". If any are outstanding, address them or make a note in the scratchpad.txt about why they were not completed.
+            * Summarize all actions taken, the current state of the data, and the preprocessing plan in the scratchpad.txt (`update_scratchpad`).
+            * Indicate that Phase 1 (Understanding and Data Inspection) is complete and you are ready for the next phase.
+
+        Always provide clear reasoning for your actions. Use the scratchpad.txt for detailed logging of your progress, observations, and plans.
+        Do not hesitate to use `ask_user_for_input` when you face ambiguity, critical errors you cannot resolve, or need a decision that impacts the workflow.
+        Start by reading the scratchpad.txt and the agent_tasks.json for any existing notes and start by reading the manifest from the previous
+        phase, if available, under {self.root_path}/manifests/phase_0/dataset_manifest.json, 
+        It is imperative that you end the phase by logging and writing your finding in the {self.root_path}/manifests/phase_1/manifest.json`)!
+        
+        Inspect the {self.root_path}/src/ subdirectories and/or files, some default empty files have been set up for you. You can use these if you need.
+        """
+
+    def eda_preprocessing_directive_2(self) -> str:
+        """
+        Constructs the detailed agent directive string for EDA and preprocessing.
+        Args:
+            initial_prompt_details: Dictionary containing the initial user prompt details.
+        Returns:
+            A string containing the agent directive.
+        """
+
+        return f"""
+        {self.initial_prompt}
+
+        Your current objective: Phase 2 - EDA and Data Preprocessing.
+
+        Follow these general steps, using your available tools and reasoning capabilities. Finish this phase to the best
+        of your ability! Keep in mind this is a high stakes project, everything you do will have impact further down the line.
+        You are at liberty to use as many tools as you want to perform the exploratory data analysis as professionally as possible.
+        Use the web browsing tool if needed.
+
+        1.  **Plan and Execute EDA:**
             * Based on `Data Type` and inspection, plan EDA. If the plan is unclear or you need to make choices with significant impact (e.g., how to handle a large amount of missing data).
             * Generate Python EDA script, save to `{self.root_path}/scripts/exploratory_data_analysis.py` using `write_file`.
                 * The script should print summaries and save plots to `{self.root_path}/results/plots/eda/` (use `create_directory` if the path doesn't exist).
@@ -76,27 +114,22 @@ class Directive:
                 * Analyze the error output.
                 * Attempt to debug common issues (e.g., incorrect paths, missing libraries you forgot to add).
                 * If you cannot resolve it, use `ask_user_for_input` to present the error and ask for help or suggestions. E.g., "The EDA script failed with the following error: [...]. How should I proceed?".
-            * Mark tasks as "complete" in `manage_agent_tasks`.
 
-        4.  **Plan Preprocessing:**
+        2.  **Plan Preprocessing:**
             * Based on EDA results and `Target Input Tensor Shape`, plan the necessary preprocessing steps.
             * If EDA findings are ambiguous for planning or if choices about preprocessing strategy are critical and uncertain, use `ask_user_for_input` to get user feedback or decisions.
-            * Plan a manifest file (e.g., `{self.root_path}/manifests/phase_1/dataset_manifest.json`). 
+            * Plan a manifest file (e.g., `{self.root_path}/manifests/phase_2/dataset_manifest.json`). 
             * Log your preprocessing plan in the scratchpad.txt.
-            * Mark tasks as "complete" in `manage_agent_tasks`.
 
-        5.  **Conclude Phase 1:**
+        3.  **Conclude Phase 2:**
             * Ensure all planned tasks are "complete". If any are outstanding, address them or make a note in the scratchpad.txt about why they were not completed.
             * Summarize all actions taken, key findings from EDA, the current state of the data, and the preprocessing plan in the scratchpad.txt (`update_scratchpad`).
-            * Indicate that Phase 1 (EDA and Data Preprocessing) is complete and you are ready for the next phase.
+            * Indicate that Phase 2 (EDA and Data Preprocessing) is complete and you are ready for the next phase.
 
         Always provide clear reasoning for your actions. Use the scratchpad.txt for detailed logging of your progress, observations, and plans.
-        Leverage `manage_agent_tasks` to structure your work within each phase and track your sub-tasks diligently.
         Do not hesitate to use `ask_user_for_input` when you face ambiguity, critical errors you cannot resolve, or need a decision that impacts the workflow.
-        Start by reading the scratchpad.txt and the agent_tasks.json for any existing notes and start by reading the manifest from the previous phase under {self.root_path}/manifests/phase_0/dataset_manifest.json, 
-        then list your initial high-level tasks for this phase using `manage_agent_tasks` (e.g., add tasks for steps 1 through 5).
-
-        Inspect the {self.root_path}/src/ subdirectories and/or files, some default empty files have been set up for you. You can use these if you need.
+        Start by reading the scratchpad.txt and the agent_tasks.json for any existing notes and start by reading the manifest from the previous phase under {self.root_path}/manifests/phase_1/manifest.json, 
+        It is imperative that you end the phase by logging and writing your finding in the {self.root_path}/manifests/phase_2/manifest.json`)!
         """
 
 # def define_scripting_testing_directive(initial_prompt_details: dict) -> str:
