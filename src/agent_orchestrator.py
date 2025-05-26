@@ -14,6 +14,7 @@ logger.setLevel(logging.INFO)
 
 from smolagents import CodeAgent, MultiStepAgent, LiteLLMModel
 from smolagents.models import TransformersModel, Model 
+from smolagents import OpenAIServerModel
 
 
 class AgentOrchestrator:
@@ -62,6 +63,13 @@ class AgentOrchestrator:
                     api_key="YOUR_API_KEY", 
                     num_ctx=self.llm_provider_config.get("kwargs").get("max_new_tokens"), # ollama default is 2048 which will fail horribly. 8192 works for easy tasks, more is better. Check https://huggingface.co/spaces/NyxKrage/LLM-Model-VRAM-Calculator to calculate how much VRAM this will need for the selected model.
                 )
+
+            elif self.llm_provider=="openai": # note that openai here stands for the OpenAIServerModel, we can use gemini with this model for instance
+                model_instance = OpenAIServerModel(model_id="gemini-2.0-flash",
+                                        api_key=os.environ['GEMINI_API_KEY'],
+                                        # Google Gemini OpenAI-compatible API base URL
+                                        api_base="https://generativelanguage.googleapis.com/v1beta/openai/",
+                                    )
             
             logger.info(f"Transformer Model initialized successfully for model: {self.llm_model_id}")
             return model_instance

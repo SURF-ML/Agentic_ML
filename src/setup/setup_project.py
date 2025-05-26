@@ -153,7 +153,7 @@ def main():
         logger.critical(f"Failed to load configuration from {args.config}. Exiting.")
         return
 
-    with open(config.get('paths').get('initial_prompt_json'), "r") as f:
+    with open(config.get('run').get('initial_prompt_json'), "r") as f:
         project_json = json.load(f)
 
     # Use the project_name from the command-line arguments

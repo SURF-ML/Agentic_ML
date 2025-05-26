@@ -29,9 +29,38 @@ class Directive:
             adhere to high software engineering standards.
             """
 
-    def get_directives(self, directive: str="eda_preprocessing_directive") -> List[str]:
-        return [self.inspect_and_understand_data_1(), 
-                self.eda_preprocessing_directive_2()]
+    def get_directives(self, directive_key: str = "all") -> List[str]:
+        """
+        Returns a list of directive strings based on the provided key.
+        Args:
+            directive_key: Specifies which directives to return.
+                           "all": returns all defined directives in sequence.
+                           "phase_1": returns inspect_and_understand_data_1.
+                           "phase_2": returns eda_preprocessing_directive_2.
+                           "phase_3": returns data_preprocessing_and_feature_engineering_3.
+                           "phase_4": returns model_selection_and_initial_training_4.
+                           "phase_5": returns model_evaluation_and_iteration_planning_5.
+                           Default is "all".
+        Returns:
+            A list of strings, where each string is a directive for a phase.
+        """
+        directives_map = {
+            "phase_1": [self.inspect_and_understand_data_1()],
+            "phase_2": [self.eda_preprocessing_directive_2()],
+            "phase_3": [self.data_preprocessing_and_feature_engineering_3()],
+            "phase_4": [self.model_selection_and_initial_training_4()],
+            #"phase_5": [self.model_evaluation_and_iteration_planning_5()],
+        }
+        if directive_key == "all":
+            return [
+                self.inspect_and_understand_data_1(),
+                self.eda_preprocessing_directive_2(),
+                self.data_preprocessing_and_feature_engineering_3(),
+                self.model_selection_and_initial_training_4(),
+                #self.model_evaluation_and_iteration_planning_5(),
+            ]
+        return directives_map.get(directive_key, [f"Error: Unknown directive key '{directive_key}'."])
+    
     
     def inspect_and_understand_data_1(self) -> str:
         """
@@ -51,13 +80,11 @@ class Directive:
         of your ability! Keep in mind this is a high stakes project, everything you do will have impact further down the line.
 
         1.  **Understand Task & Locate Data:**
-            * Add a task to `manage_agent_tasks` like "Understand task and locate data".
             * The Raw Data Location contains the data you'll work with.
             * Confirm this path. If it seems unusable, incorrect, or missing, first use `ask_user_for_input` to request clarification.
             * Log any understanding and stuff worth remembering using `update_scratchpad` tool.
 
         2.  **Initial Data Inspection:**
-            * Add relevant tasks to `manage_agent_tasks` (e.g., "List project root directory", "Identify sample files", "Inspect sample files", "Summarize inspection findings").
             * Use `list_directory_contents` on the Project root path (recursive, max_depth 2-3).
             * Identify a few sample files. For each, use `inspect_file_type_and_structure`.
             * Summarize and log findings in the scratchpad.txt.
@@ -65,7 +92,7 @@ class Directive:
         3.  **Plan Preprocessing:**
             * Based on the previous results, plan the necessary preprocessing steps.
             * If the current findings are ambiguous for planning or if choices about preprocessing strategy are critical and uncertain, use `ask_user_for_input` to get user feedback or decisions.
-            * Plan a manifest file (e.g., `{self.root_path}/manifests/phase_1/manifest.json`). 
+            * Plan a manifest file (e.g., `{self.root_path}/manifests/phase_1/manifest.json`). Add as much information as you can. 
             * Log your preprocessing plan in the scratchpad.txt.
             
         3.  **Conclude Phase 1:**
@@ -75,8 +102,7 @@ class Directive:
 
         Always provide clear reasoning for your actions. Use the scratchpad.txt for detailed logging of your progress, observations, and plans.
         Do not hesitate to use `ask_user_for_input` when you face ambiguity, critical errors you cannot resolve, or need a decision that impacts the workflow.
-        Start by reading the scratchpad.txt and the agent_tasks.json for any existing notes and start by reading the manifest from the previous
-        phase, if available, under {self.root_path}/manifests/phase_0/dataset_manifest.json, 
+        Start by reading the scratchpad.txt and the manifests for any existing notes, if available, under {self.root_path}/manifests/phase_0/dataset_manifest.json, 
         It is imperative that you end the phase by logging and writing your finding in the {self.root_path}/manifests/phase_1/manifest.json`)!
         
         Inspect the {self.root_path}/src/ subdirectories and/or files, some default empty files have been set up for you. You can use these if you need.
@@ -118,7 +144,7 @@ class Directive:
         2.  **Plan Preprocessing:**
             * Based on EDA results and `Target Input Tensor Shape`, plan the necessary preprocessing steps.
             * If EDA findings are ambiguous for planning or if choices about preprocessing strategy are critical and uncertain, use `ask_user_for_input` to get user feedback or decisions.
-            * Plan a manifest file (e.g., `{self.root_path}/manifests/phase_2/dataset_manifest.json`). 
+            * Plan a manifest file (e.g., `{self.root_path}/manifests/phase_2/dataset_manifest.json`). Add as much information as you can.
             * Log your preprocessing plan in the scratchpad.txt.
 
         3.  **Conclude Phase 2:**
@@ -128,8 +154,112 @@ class Directive:
 
         Always provide clear reasoning for your actions. Use the scratchpad.txt for detailed logging of your progress, observations, and plans.
         Do not hesitate to use `ask_user_for_input` when you face ambiguity, critical errors you cannot resolve, or need a decision that impacts the workflow.
-        Start by reading the scratchpad.txt and the agent_tasks.json for any existing notes and start by reading the manifest from the previous phase under {self.root_path}/manifests/phase_1/manifest.json, 
+        Start by reading the scratchpad.txt for any existing notes and start by reading the manifest from the previous phase under {self.root_path}/manifests/phase_1/manifest.json, 
         It is imperative that you end the phase by logging and writing your finding in the {self.root_path}/manifests/phase_2/manifest.json`)!
+        """
+
+    def data_preprocessing_and_feature_engineering_3(self) -> str:
+        """
+        Constructs the detailed agent directive string for implementing data preprocessing and feature engineering.
+        """
+        return f"""
+        {self.initial_prompt}
+
+        Your current objective: Phase 3 - Data Preprocessing Implementation and Feature Engineering.
+
+        Follow these general steps, using your available tools and reasoning capabilities.
+        Start by reading {self.scratchpad_file}, and the manifest from Phase 2: `{self.root_path}/manifests/phase_2/manifest.json`.
+
+        1.  **Implement Preprocessing Script:**
+            * Add tasks: "Develop data preprocessing script", "Execute preprocessing script", "Verify processed data".
+            * Based on the detailed plan in the Phase 2 manifest, write a Python script (e.g., `{self.root_path}/scripts/data_preprocessing.py`) using `write_file`.
+                * This script should load raw or interim data (as identified in previous phases).
+                * Apply all planned cleaning, transformation, encoding, and scaling steps.
+                * Save the processed data to a designated output directory (e.g., `{self.root_path}/data/processed/`). Use `create_directory` for this path. Ensure output format is suitable for model training (e.g., CSV, Parquet, NumPy arrays).
+            * Check and update `{self.root_path}/requirements.txt` using `read_file_content` and `append_to_file` if new libraries are introduced for preprocessing.
+            * Execute the script using `execute_python_script`. Analyze output/errors. Debug or use `ask_user_for_input` if issues arise.
+            * Log script location, processed data path, and any important observations in {self.scratchpad_file}.
+
+        2.  **Plan and Implement Feature Engineering (if applicable):**
+            * Add task: "Plan and implement feature engineering".
+            * Review EDA findings and the `Project Task`. Identify opportunities for feature engineering (e.g., creating interaction terms, polynomial features, extracting features from text/date, dimensionality reduction like PCA).
+            * If not already part of the preprocessing script, you might create a separate script (e.g., `{self.root_path}/scripts/feature_engineering.py`) or modify the existing one. Use `write_file`.
+            * If the strategy for feature engineering is complex or has many alternatives, briefly outline your proposal in the scratchpad and use `ask_user_for_input` for confirmation or guidance.
+            * Implement the chosen feature engineering steps. This might involve re-running parts of your preprocessing script or executing a new one.
+            * Ensure engineered features are saved alongside or as part of the processed dataset.
+            * Log the feature engineering plan, implementation details, and outcomes in {self.scratchpad_file}.
+
+        3.  **Verify Processed Data Quality:**
+            * Add task: "Verify quality and structure of processed data".
+            * Perform a quick inspection of the processed data. Use `inspect_file_type_and_structure` or write a small script to load and check shape, data types, and a sample of the processed data.
+            * Confirm it aligns with expectations and the `Target Input Tensor Shape` (if provided).
+            * Log verification results in {self.scratchpad_file}.
+
+        4.  **Conclude Phase 3:**
+            * Summarize actions, details of implemented preprocessing and feature engineering, and final processed data characteristics in {self.scratchpad_file}.
+            * Create the manifest: `{self.root_path}/manifests/phase_3/processed_data_manifest.json`. This file should detail:
+                * Path to the preprocessing/feature engineering script(s).
+                * Description of all transformations and features created.
+                * Path to the final processed dataset(s).
+                * Shape and data types of the processed data.
+                * Any relevant statistics about the processed data (e.g., number of features, samples).
+            * Use `write_file` to create this manifest.
+            * Indicate in {self.scratchpad_file} that Phase 3 is complete.
+
+        Remember to maintain clean, modular code in your scripts.
+        """
+    
+    def model_selection_and_initial_training_4(self) -> str:
+        """
+        Constructs the detailed agent directive string for model selection and initial training.
+        """
+        return f"""
+        {self.initial_prompt}
+
+        Your current objective: Phase 4 - Model Selection and Initial Training.
+
+        Follow these general steps.
+        Start by reading {self.scratchpad_file} and the manifest from Phase 3: `{self.root_path}/manifests/phase_3/manifest.json`.
+
+        1.  **Review Processed Data and Task for Model Selection:**
+            * Load information about the processed data from the Phase 3 manifest.
+            * Based on this, research suitable machine learning models. Use `search_arxiv`, `search_google_scholar`, or `search_github_repositories` for ideas or implementations if needed.
+            * This is the most important step for a successful completion of this phase, make sure to use the scratchpad to write down your thoughts and research which model is the best one for this task.
+            * Select a candidate model appropriate for the task. Justify your choices in {self.scratchpad_file}. If uncertain about choices, use `ask_user_for_input`.
+
+        2.  **Develop Training Script(s):**
+            * Create a Python script (e.g., `{self.root_path}/src/model_training.py`. Use `write_file`.
+            * The script should:
+                * Load the processed data (path from Phase 3 manifest).
+                * Implement data splitting (e.g., train, validation, test sets). Ensure this is done consistently.
+                * Define and implement the selected model architectures using the `Target Framework`.
+                * Set up the training loop, including loss function, optimizer, and relevant metrics.
+                * Include functionality to save trained model artifacts (e.g., to `{self.root_path}/models/model_name/`) and training logs/metrics (e.g., to `{self.root_path}/results/training_logs/`). Use `create_directory` for these paths.
+            * Check and update `{self.root_path}/requirements.txt` for any new libraries (e.g., scikit-learn, torch). Use `read_file_content`, `append_to_file`.
+            * Use functions, typing and classes. Make sure everything is modularized.
+
+        3.  **Perform Initial Training Runs:**
+            * Add task: "Execute initial training for candidate models".
+            * Execute the training script for each candidate model. Use `execute_python_script`.
+            * Monitor the training process (if possible, through script output).
+            * If training fails or produces unexpected errors, analyze the output, debug the script, or use `ask_user_for_input` for assistance.
+            * Log paths to saved models, training logs, and key performance metrics (e.g., training/validation loss and accuracy) in {self.scratchpad_file}. Use `log_agent_message` for detailed logs if useful.
+
+        4.  **Conclude Phase 4:**
+            * Summarize actions, selected models, training setup, and initial training results in {self.scratchpad_file}.
+            * Create the manifest: `{self.root_path}/manifests/phase_4/manifest.json`. This JSON file should include:
+                * List of models trained.
+                * Path to the training script(s).
+                * Details of data splits.
+                * Paths to saved model artifacts for each model.
+                * Key initial training/validation metrics for each model.
+                * Path to any training log files.
+            * Use `write_file` to create this manifest.
+            * Indicate in {self.scratchpad_file} that Phase 4 is complete.
+
+        Always provide clear reasoning for your actions. Use the scratchpad.txt for detailed logging of your progress, observations, and plans.
+        Do not hesitate to use `ask_user_for_input` when you face ambiguity, critical errors you cannot resolve, or need a decision that impacts the workflow.
+        Browse the web for inspiration on which type of model or method should be best suited for this type of task, work to the best of your ability to improve the model.
         """
 
 # def define_scripting_testing_directive(initial_prompt_details: dict) -> str:

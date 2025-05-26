@@ -23,9 +23,8 @@ ALL_CUSTOM_TOOLS: List[callable] = [
     execute_python_script, execute_shell_command, install_python_package,
     browse_webpage, search_arxiv, search_github_repositories,
     read_scratchpad, update_scratchpad, inspect_file_type_and_structure,
-    search_wikipedia, read_scratchpad, ask_user_for_input, check_python_package_version, 
-    list_installed_python_packages, grep_directory, zip_files, unzip_file,
-    update_scratchpad
+    search_wikipedia, ask_user_for_input, check_python_package_version, 
+    list_installed_python_packages, grep_directory, zip_files, unzip_file
 ]
 DATA_PHASE_TOOLS: List[callable] = [
     create_directory, write_file, append_to_file, read_file_content,
@@ -35,6 +34,21 @@ DATA_PHASE_TOOLS: List[callable] = [
     ask_user_for_input, check_python_package_version, 
     list_installed_python_packages, grep_directory, zip_files, unzip_file
 ]
+
+MODEL_EXEC_PHASE_TOOLS: List[callable] = [
+    create_directory, write_file, append_to_file, read_file_content,
+    list_directory_contents, delete_file_or_directory, replace_text_in_file,
+    execute_python_script, execute_shell_command, install_python_package,
+    browse_webpage, read_scratchpad, update_scratchpad, inspect_file_type_and_structure,
+    ask_user_for_input, check_python_package_version, 
+    list_installed_python_packages, grep_directory
+]
+
+PHASE_TO_TOOLS: Dict[str, List[callable]] = {"phase_1": DATA_PHASE_TOOLS,
+                                  "phase_2": DATA_PHASE_TOOLS,
+                                  "phase_3": DATA_PHASE_TOOLS,
+                                  "phase_4": MODEL_EXEC_PHASE_TOOLS,
+                                  "all": ALL_CUSTOM_TOOLS}
 
 from phases.ml_directive import Directive
 
@@ -92,8 +106,8 @@ def run_ml_pipeline_agent(config: Dict[str, Any]):
 
     orchestrator = AgentOrchestrator(config)
 
-    paths_config = config.get('paths', {})
-    initial_prompt_filepath = paths_config.get('initial_prompt_json', 'initial_project_config.json') 
+    run_config = config.get('run', {})
+    initial_prompt_filepath = run_config.get('initial_prompt_json', 'initial_project_config.json') 
 
     if orchestrator.load_from_json(initial_prompt_filepath):
         prompt_details = orchestrator.get_initial_prompt_details()
@@ -122,14 +136,19 @@ def run_ml_pipeline_agent(config: Dict[str, Any]):
     final_agent_config = {**default_agent_settings, **agent_config_from_yaml}
 
     ml_directives = Directive(prompt_details)
-    directives = ml_directives.get_directives()
-    # Should be the same length as ml_directives
-    tools_needed = [DATA_PHASE_TOOLS, DATA_PHASE_TOOLS]
+    exec_phase = run_config.get("execute_phase")
+    directives = ml_directives.get_directives(exec_phase)
+    tools_needed = [PHASE_TO_TOOLS[exec_phase]]
+    if exec_phase=="all":
 
-    if not len(tools_needed) == len(directives):
-        logger.error(f"Each phase needs its own set of tools defined.")
-        logger.info(f"Using all the tools instead. Be aware of the agent having access to all tooling in each phase.")
-        tools_needed = [ALL_CUSTOM_TOOLS for _ in directives]
+        # Should be the same length as ml_directives
+        tools_needed = PHASE_TO_TOOLS[exec_phase]
+
+        if not len(tools_needed) == len(directives):
+            logger.error(f"Each phase needs its own set of tools defined.")
+            logger.info(f"Using all the tools instead. Be aware of the agent having access to all tooling in each phase.")
+            tools_needed = [tools_needed for _ in directives]
+
 
     final_results = run_phases(orchestrator, 
                                directives, 
