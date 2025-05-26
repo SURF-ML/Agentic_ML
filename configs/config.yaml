@@ -1,7 +1,6 @@
-# config.yaml
 llm:
-  provider: "ollama"
-  model_id: "ollama_chat/qwen3:32b" #Qwen/Qwen3-14B" #ollama_chat/qwen3:14b
+  provider: "openai" #"ollama"
+  model_id: "gemini-2.0-flash" #"ollama_chat/qwen3:32b" #Qwen/Qwen3-14B" #ollama_chat/qwen3:14b # gemini-2.0-flash
   transformers_model_kwargs:
     kwargs: # These are passed to AutoModelForCausalLM.from_pretrained
       device_map: "auto" # Example
@@ -9,7 +8,7 @@ llm:
       max_new_tokens: 16384
 
 agent:
-  max_steps: 40
+  max_steps: 16
   stream_outputs: true
   additional_authorized_imports:
     - "torch"
@@ -18,7 +17,10 @@ agent:
     - "os"
     - "json"
     - "logging"
+    - "posixpath"
+    - "open"
 
-paths:
+run:
   initial_prompt_json: "../configs/initial_project_config.json" # Path to JSON file with initial prompt details
+  execute_phase: "all"
 
