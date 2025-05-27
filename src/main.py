@@ -2,7 +2,7 @@ import os
 import logging
 import argparse 
 import yaml 
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Tuple
 
 from utils.util_functions import load_config
 
@@ -53,7 +53,6 @@ PHASE_TO_TOOLS: Dict[str, List[callable]] = {"phase_1": DATA_PHASE_TOOLS,
 from phases.ml_directive import Directive
 
 from smolagents import CodeAgent
-
 from agent_orchestrator import AgentOrchestrator
 
 # Logger will be configured in main after parsing args for log level
@@ -71,6 +70,23 @@ def run_phases(orchestrator: AgentOrchestrator,
         results.append(phase_result)
     
     return results
+
+def get_directives_tools(prompt_details: dict, run_config: dict) -> Tuple[Directive, List[List]]:
+    ml_directives = Directive(prompt_details)
+    exec_phase = run_config.get("execute_phase")
+    directives = ml_directives.get_directives(exec_phase)
+    tools_needed = [PHASE_TO_TOOLS[exec_phase]]
+    if exec_phase=="all":
+
+        # Should be the same length as ml_directives
+        tools_needed = PHASE_TO_TOOLS[exec_phase]
+
+        if not len(tools_needed) == len(directives):
+            logger.error(f"Each phase needs its own set of tools defined.")
+            logger.info(f"Using all the tools instead. Be aware of the agent having access to all tooling in each phase.")
+            tools_needed = [tools_needed for _ in directives]
+
+    return directives, tools_needed
 
 def run_single_phase(orchestrator: AgentOrchestrator, 
                    final_agent_config: dict, 
@@ -135,20 +151,7 @@ def run_ml_pipeline_agent(config: Dict[str, Any]):
     # Merge default with YAML config, YAML takes precedence
     final_agent_config = {**default_agent_settings, **agent_config_from_yaml}
 
-    ml_directives = Directive(prompt_details)
-    exec_phase = run_config.get("execute_phase")
-    directives = ml_directives.get_directives(exec_phase)
-    tools_needed = [PHASE_TO_TOOLS[exec_phase]]
-    if exec_phase=="all":
-
-        # Should be the same length as ml_directives
-        tools_needed = PHASE_TO_TOOLS[exec_phase]
-
-        if not len(tools_needed) == len(directives):
-            logger.error(f"Each phase needs its own set of tools defined.")
-            logger.info(f"Using all the tools instead. Be aware of the agent having access to all tooling in each phase.")
-            tools_needed = [tools_needed for _ in directives]
-
+    directives, tools_needed = get_directives_tools(prompt_details, run_config)
 
     final_results = run_phases(orchestrator, 
                                directives, 

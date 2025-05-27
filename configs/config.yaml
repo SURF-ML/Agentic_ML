@@ -22,5 +22,5 @@ agent:
 
 run:
   initial_prompt_json: "../configs/initial_project_config.json" # Path to JSON file with initial prompt details
-  execute_phase: "all"
+  execute_phase: "phase_4"
 
