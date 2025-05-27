@@ -158,7 +158,7 @@ class AgentOrchestrator:
             logger.error(f"Error initializing {agent_name} with config {merged_config}: {e}", exc_info=True)
             raise RuntimeError(f"{agent_name} initialization failed: {e}")
 
-    def run_agent_phase(
+    def run_agent(
         self,
         directive: str,
         task_images: Optional[List[Any]] = None,

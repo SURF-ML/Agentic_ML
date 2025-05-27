@@ -103,7 +103,7 @@ def run_single_phase(orchestrator: AgentOrchestrator,
         return
 
     logger.info("Starting agent execution phase...")
-    final_result = orchestrator.run_agent_phase(directive=directive)
+    final_result = orchestrator.run_agent(directive=directive)
 
     if isinstance(final_result, dict) and final_result.get("error"):
         logger.error(f"Agent phase execution failed: {final_result.get('message')}")
@@ -139,23 +139,12 @@ def run_ml_pipeline_agent(config: Dict[str, Any]):
     os.chdir(work_dir)
 
     agent_config_from_yaml = config.get('agent', {})
-    # Default agent settings, can be overridden by YAML
-    default_agent_settings = {
-        "stream_outputs": True,
-        "max_steps": 30,
-        "additional_authorized_imports": [
-            "torch", "numpy", "pandas", "sklearn", "matplotlib", "PIL",
-            "os", "json", "sys", "glob", "shutil", "logging"
-        ]
-    }
-    # Merge default with YAML config, YAML takes precedence
-    final_agent_config = {**default_agent_settings, **agent_config_from_yaml}
 
     directives, tools_needed = get_directives_tools(prompt_details, run_config)
 
     final_results = run_phases(orchestrator, 
                                directives, 
-                               final_agent_config,
+                               agent_config_from_yaml,
                                tools_needed)
     
     last_result = final_results[-1]

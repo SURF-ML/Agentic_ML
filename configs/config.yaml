@@ -19,6 +19,12 @@ agent:
     - "logging"
     - "posixpath"
     - "open"
+    - "sklearn"
+    - "matplotlib"
+    - "PIL"
+    - "glob"
+    - "shutil"
+    - "logging"
 
 run:
   initial_prompt_json: "../configs/initial_project_config.json" # Path to JSON file with initial prompt details
