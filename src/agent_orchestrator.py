@@ -17,6 +17,9 @@ from smolagents.models import TransformersModel, Model
 from smolagents import OpenAIServerModel
 
 
+class AgentTypes:
+    pass
+
 class AgentOrchestrator:
     """
     Orchestrates the lifecycle of an agent, including its initialization,
@@ -44,6 +47,18 @@ class AgentOrchestrator:
     
         logger.info(f"AgentOrchestrator initialized with LLM model ID: {self.llm_model_id}")
 
+        self.default_agent_configs = {
+            "additional_authorized_imports": [
+                "os", "json", "sys", "collections", "glob", "shutil",
+                "pandas", "numpy", "PIL", "matplotlib", "sklearn",
+                "torch", "torchvision", "tensorflow", "logging" 
+            ],
+            "stream_outputs": True,
+            "max_steps": 50,
+            "name": None,
+            "description": None
+        }
+
     def _initialize_llm_model(self) -> Model:
         """
         Initializes and returns the LLM model instance.
@@ -65,10 +80,10 @@ class AgentOrchestrator:
                 )
 
             elif self.llm_provider=="openai": # note that openai here stands for the OpenAIServerModel, we can use gemini with this model for instance
-                model_instance = OpenAIServerModel(model_id="gemini-2.0-flash",
+                model_instance = OpenAIServerModel(model_id=self.llm_model_id,
                                         api_key=os.environ['GEMINI_API_KEY'],
                                         # Google Gemini OpenAI-compatible API base URL
-                                        api_base="https://generativelanguage.googleapis.com/v1beta/openai/",
+                                        api_base="https://generativelanguage.googleapis.com/v1beta/openai/", #https://willma.liza.surf.nl/api/v0
                                     )
             
             logger.info(f"Transformer Model initialized successfully for model: {self.llm_model_id}")
@@ -121,8 +136,11 @@ class AgentOrchestrator:
         self,
         list_of_tools: List[callable],
         agent_class: Type[MultiStepAgent] = CodeAgent,
-        agent_config: Optional[Dict[str, Any]] = None
-    ) -> None:
+        agent_config: Optional[Dict[str, Any]] = None,
+        name: str = None,
+        description: str = None,
+        orchestrator: bool = False # Might not need this boolean
+    ) -> CodeAgent:
         """
         Initializes and sets up an agent instance.
 
@@ -134,31 +152,32 @@ class AgentOrchestrator:
         effective_agent_config = agent_config or {}
         agent_name = agent_class.__name__
 
-        default_configs = {
-            "additional_authorized_imports": [
-                "os", "json", "sys", "collections", "glob", "shutil",
-                "pandas", "numpy", "PIL", "matplotlib", "sklearn",
-                "torch", "torchvision", "tensorflow", "logging" 
-            ],
-            "stream_outputs": True,
-            "max_steps": 50 
-        }
+        self.default_agent_configs["name"] = name
+        self.default_agent_configs["description"] = description
+
         # Merge, with agent_config taking precedence
-        merged_config = {**default_configs, **effective_agent_config}
+        merged_config = {**self.default_configs_configs, **effective_agent_config}
 
         try:
-            self.agent = agent_class(
+            agent = agent_class(
                 tools=list_of_tools,
                 model=self.model,
                 **merged_config
             )
+
+            if orchestrator:
+                self.agent = agent
+
             model_id_str = self.model.model_id if hasattr(self.model, 'model_id') else 'N/A'
             logger.info(f"{agent_name} initialized successfully with {len(list_of_tools)} tools, model {model_id_str}, and config: {merged_config}")
         except Exception as e:
             logger.error(f"Error initializing {agent_name} with config {merged_config}: {e}", exc_info=True)
             raise RuntimeError(f"{agent_name} initialization failed: {e}")
+        
+        return agent
 
-    def run_agent(
+    # For now only runs an orchestrator CodeAgent
+    def run_orchestrator_agent(
         self,
         directive: str,
         task_images: Optional[List[Any]] = None,

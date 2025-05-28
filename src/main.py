@@ -58,18 +58,6 @@ from agent_orchestrator import AgentOrchestrator
 # Logger will be configured in main after parsing args for log level
 logger = logging.getLogger(__name__)
 
-def run_phases(orchestrator: AgentOrchestrator, 
-               directives: List[str], 
-               final_agent_config: dict,
-               phases_tools: List[List[str]]) -> List[dict]:
-
-    results = []
-    for directive, phase_tools in zip(directives, phases_tools):
-        logger.debug(f"Generated directive for agent:\n{directive}")
-        phase_result = run_single_phase(orchestrator, final_agent_config, directive, phase_tools)
-        results.append(phase_result)
-    
-    return results
 
 def get_directives_tools(prompt_details: dict, run_config: dict) -> Tuple[Directive, List[List]]:
     ml_directives = Directive(prompt_details)
@@ -88,10 +76,28 @@ def get_directives_tools(prompt_details: dict, run_config: dict) -> Tuple[Direct
 
     return directives, tools_needed
 
+def define_agents(orchestrator: AgentOrchestrator,
+                  phase_tools: List[callable],
+                  sub_agents: List[str]) -> List[CodeAgent]:
+    NotImplementedError
+
+def run_phases(orchestrator: AgentOrchestrator, 
+               directives: List[str], 
+               final_agent_config: dict,
+               phases_tools: List[List[str]]) -> List[dict]:
+
+    results = []
+    for directive, phase_tools in zip(directives, phases_tools):
+        logger.debug(f"Generated directive for agent:\n{directive}")
+        phase_result = run_single_phase(orchestrator, final_agent_config, directive, phase_tools)
+        results.append(phase_result)
+    
+    return results
+
 def run_single_phase(orchestrator: AgentOrchestrator, 
                    final_agent_config: dict, 
                    directive: str,
-                   phase_tools: List[str]) -> dict:
+                   phase_tools: List[callable]) -> dict:
     try:
         orchestrator.setup_agent(
             list_of_tools=phase_tools,

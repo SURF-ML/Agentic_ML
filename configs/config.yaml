@@ -8,7 +8,7 @@ llm:
       max_new_tokens: 16384
 
 agent:
-  max_steps: 16
+  max_steps: 25
   stream_outputs: true
   additional_authorized_imports:
     - "torch"
@@ -25,6 +25,8 @@ agent:
     - "glob"
     - "shutil"
     - "logging"
+  sub_agent: ["browsing"]#, "pdf_opening", "file_searching", "data_inspecting"]
+
 
 run:
   initial_prompt_json: "../configs/initial_project_config.json" # Path to JSON file with initial prompt details
