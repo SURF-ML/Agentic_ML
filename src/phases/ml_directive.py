@@ -28,7 +28,7 @@ class Directive:
             If you are creating code, let the code be written as cleanly as possible. Use functions, keep the code modular, use typing and
             adhere to high software engineering standards.
             """
-
+    # TODO: function should get list of strings as input
     def get_directives(self, directive_key: str = "all") -> List[str]:
         """
         Returns a list of directive strings based on the provided key.
