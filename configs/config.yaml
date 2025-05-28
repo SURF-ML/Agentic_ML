@@ -1,11 +1,19 @@
 llm:
   provider: "openai" #"ollama"
-  model_id: "gemini-2.0-flash" #"ollama_chat/qwen3:32b" #Qwen/Qwen3-14B" #ollama_chat/qwen3:14b # gemini-2.0-flash
-  transformers_model_kwargs:
-    kwargs: # These are passed to AutoModelForCausalLM.from_pretrained
+  model_id: "gemini-2.0-flash" #ollama_chat/qwen3:14b #"gemini-2.0-flash" #"ollama_chat/qwen3:32b" #Qwen/Qwen3-14B" #ollama_chat/qwen3:14b
+  provider_kwargs:
+    transformers:
       device_map: "auto" # Example
       # torch_dtype: "auto" # Example
       max_new_tokens: 16384
+    ollama:
+        # torch_dtype: "auto" # Example
+        api_base: "http://localhost:11434"
+        num_ctx: 16384
+    openai:
+      max_new_tokens: 16384
+      api_base: "https://generativelanguage.googleapis.com/v1beta/openai/"
+      api_key: "GEMINI_API_KEY"
 
 agent:
   max_steps: 25
@@ -25,10 +33,10 @@ agent:
     - "glob"
     - "shutil"
     - "logging"
-  sub_agent: ["browsing"]#, "pdf_opening", "file_searching", "data_inspecting"]
+  sub_agents: ["browsing", "pdf_opening", "file_searching", "data_inspecting", "package_installing", "file_managing"]
 
 
 run:
   initial_prompt_json: "../configs/initial_project_config.json" # Path to JSON file with initial prompt details
-  execute_phase: "phase_4"
+  execute_phase: "all"
 

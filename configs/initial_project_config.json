@@ -1,7 +1,7 @@
 {
   "project_name": "ML_Agency",
   "project_path": "../agent_working_environment",
-  "task_description": "I have a medical csv dataset, let's create a machine learning pipeline to train a simple pytorch model. There is already some work done. Look at the files carefully.",
+  "task_description": "I have a medical csv dataset, let's create a machine learning pipeline to train a simple pytorch model. use the diagnosis_hypertension column for classification.",
   "data_type": "csv",
   "target_framework": "torch",
   "data_folder_path_from_user": "../raw_data"
