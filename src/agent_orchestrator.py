@@ -55,6 +55,7 @@ AGENT_SPECIFICATIONS = {
             search_github_repositories,
             search_google_scholar,
             download_file_from_url,
+            create_directory
         ],
         "name": "web_navigator_agent",
         "description": "Specialized in Browse websites, using online search engines (Wikipedia, arXiv, GitHub, Google Scholar), and downloading files from URLs. Args: query (for searches) or url (for Browse/downloading)."
@@ -64,6 +65,7 @@ AGENT_SPECIFICATIONS = {
             read_pdf_content,
             find_files_by_pattern, 
             inspect_file_type_and_structure, 
+            read_file_content
         ],
         "name": "pdf_document_agent",
         "description": "Specialized in opening, reading, and extracting text from PDF documents. Can also find PDF files. Args: filepath (for reading), directory and pattern (for finding)."
