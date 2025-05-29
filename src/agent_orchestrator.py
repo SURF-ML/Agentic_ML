@@ -261,7 +261,6 @@ class AgentOrchestrator:
         spec = AGENT_SPECIFICATIONS.get(agent_type)
         if not spec:
             raise ValueError(f"No specification found for agent type: {agent_type}")
-        print("toools", spec["tools"])
         return self._create_agent_instance(
             tools=spec["tools"],
             name=spec["name"],
