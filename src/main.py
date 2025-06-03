@@ -18,57 +18,13 @@ logger = logging.getLogger(__name__)
 def get_directives(prompt_details: dict, run_config: dict) -> List[str]:
     ml_directives = Directive(prompt_details)
     exec_phase = run_config.get("execute_phase")
-    directives = ml_directives.get_directives(exec_phase)
+    # get all the directives, but for now this is just one prompt for the main orchestrator
+    directives = ml_directives.get_directives(exec_phase)[0]
 
     return directives
 
-def run_phases(orchestrator: AgentOrchestrator, 
-               agent_list: List[str],
-               directives: List[str], 
-               final_agent_config: dict,) -> List[dict]:
-
-    results = []
-    for directive in directives:
-        logger.debug(f"Generated directive for agent:\n{directive}")
-        phase_result = run_single_phase(orchestrator, agent_list, final_agent_config, directive)
-        results.append(phase_result)
-    
-    return results
-
-def run_single_phase(orchestrator: AgentOrchestrator, 
-                     agent_list: List[str],
-                     final_agent_config: dict, 
-                     directive: str) -> dict:
-    try:
-        # TODO: all agents take the same (simple) config right now, fix this for individual agents?
-        orchestrator.setup_orchestrator(
-            specialized_agent_strings=agent_list,
-            specialized_agent_configs=final_agent_config
-        )
-
-    except RuntimeError as e:
-        logger.critical(f"Failed to set up agent via orchestrator: {e}", exc_info=True)
-        return
-
-    logger.info("Starting agent execution phase...")
-    final_result = orchestrator.run_orchestrator(directive=directive)
-
-    if isinstance(final_result, dict) and final_result.get("error"):
-        logger.error(f"Agent phase execution failed: {final_result.get('message')}")
-        logger.debug(f"Failure details: {final_result.get('details')}")
-    else:
-        logger.info(f"Agent phase completed. Final output (or summary): {str(final_result)[:1000]}")
-
-    return final_result
-
-def run_ml_pipeline_agent(config: Dict[str, Any]):
-    """
-    Main function to set up and run the ML pipeline agent using AgentOrchestrator,
-    driven by the loaded configuration.
-    """
-    logger.info("Starting ML Pipeline Agent setup with loaded configuration...")
-
-    orchestrator = AgentOrchestrator(config)
+def setup_main_orchestrator(orchestrator: AgentOrchestrator,
+                            config: dict) -> Tuple[AgentOrchestrator, str]:
 
     run_config = config.get('run', {})
     initial_prompt_filepath = run_config.get('initial_prompt_json', 'initial_project_config.json') 
@@ -88,12 +44,50 @@ def run_ml_pipeline_agent(config: Dict[str, Any]):
 
     agent_config = config.get('agent', {})
 
-    directives = get_directives(prompt_details, run_config)
-    agent_list = agent_config.get("sub_agents")
-    final_results = run_phases(orchestrator, 
-                               agent_list,
-                               directives, 
-                               agent_config)
+    directive = get_directives(prompt_details, run_config)
+    logger.debug(f"Generated directive for agent:\n{directive}")
+    #agent_list = agent_config.get("sub_agents")
+    orchestrator_list = agent_config.get("orchestrator_agents")
+
+    try:
+        # TODO: all agents take the same (simple) config right now, fix this for individual agents?
+        orchestrator.setup_main_orchestrator(
+            orchestrator_agent_strings=orchestrator_list,
+            orchestrator_configs=agent_config
+        )
+
+    except RuntimeError as e:
+        logger.critical(f"Failed to set up agent via orchestrator: {e}", exc_info=True)
+        return
+    
+    return orchestrator, directive
+
+def run_main_orchestrator(orchestrator: AgentOrchestrator,
+                          directive: str,) -> List[dict]:
+
+    logger.info("Starting Agent Execution phase...")
+    final_result = orchestrator.run_orchestrator(directive=directive)
+
+    if isinstance(final_result, dict) and final_result.get("error"):
+        logger.error(f"Agent phase execution failed: {final_result.get('message')}")
+        logger.debug(f"Failure details: {final_result.get('details')}")
+    else:
+        logger.info(f"Agent phase completed. Final output (or summary): {str(final_result)[:1000]}")
+    
+    return final_result
+
+def run_ml_agents(config: Dict[str, Any]):
+    """
+    Main function to set up and run the ML pipeline agent using AgentOrchestrator,
+    driven by the loaded configuration.
+    """
+    logger.info("Starting ML Pipeline Agent setup with loaded configuration...")
+
+    orchestrator = AgentOrchestrator(config)
+
+    orchestrator, directive = setup_main_orchestrator(orchestrator, config)
+
+    final_results = run_main_orchestrator(orchestrator, directive)
     
     last_result = final_results[-1]
     if isinstance(last_result, dict) and last_result.get("error"):
@@ -146,7 +140,7 @@ def main():
         return
 
     # Run the pipeline with the loaded config
-    run_ml_pipeline_agent(app_config)
+    run_ml_agents(app_config)
 
 
 if __name__ == "__main__":

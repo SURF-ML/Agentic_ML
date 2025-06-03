@@ -1,8 +1,8 @@
 {
-  "project_name": "ML_Agency",
+  "project_name": "ML_Agency_PCAM",
   "project_path": "../agent_working_environment",
-  "task_description": "I have a medical csv dataset, let's create a machine learning pipeline to train a simple pytorch model. use the diagnosis_hypertension column for classification.",
-  "data_type": "csv",
+  "task_description": "I want to train a pytorch model on the simple PCAM histopathology dataset, let's create a SOTA (state-of-the-art) machine learning pipeline to do so. objective is cancer vs no cancer, we are in a competition, we need to win. Look up the data online and download it. make sure to inspect the data as carefully as possible and inform yourself to create a SOTA model.",
+  "data_type": "use pytorch tensors",
   "target_framework": "torch",
-  "data_folder_path_from_user": "../raw_data"
+  "data_folder_path_from_user": "./data"
 }

@@ -31,13 +31,25 @@ from agent_environment.agent.tools import (
 )
 
 class AgentType(Enum):
-    Browsing = "browsing"
+    # Single Task Agents
+    BROWSING = "browsing"
     PDF_OPENING = "pdf_opening"
     FILE_SEARCHING = "file_searching"
     DATA_INSPECTING = "data_inspecting"
     PACKAGE_INSTALLING = "package_installing"
     FILE_MANAGING = "file_managing"
     AGENT_ORCHESTRATING = "agent_orchestrating"
+    
+    # Orchestrator agents
+    Research_Orchestrator = "research_orchestrator"
+    EnvironmentSetup_Orchestrator = "environmentsetup_orchestrator"
+    DataIngestionValidation_Orchestrator = "dataingestionvalidation_orchestrator"
+    ExploratoryDataAnalysis_Orchestrator = "exploratorydataanalysis_orchestrator"
+    DataPreprocessingFeatureEngineering_Orchestrator = "datapreprocessingfeatureengineering_orchestrator"
+    ModelTraining_Orchestrator = "modeltraining_orchestrator"
+    HyperparameterOptimization_Orchestrator = "hyperparameteroptimization_orchestrator"
+    ModelEvaluation_Orchestrator = "modelevaluation_orchestrator"
+    Reporting_Orchestrator = "reporting_orchestrator"
     
     @classmethod
     def from_string(cls, s: str) -> 'AgentType':
@@ -46,8 +58,9 @@ class AgentType(Enum):
         except ValueError:
             raise ValueError(f"Unknown agent type string: {s}")
 
-AGENT_SPECIFICATIONS = {
-    AgentType.Browsing: {
+AGENT_SINGLE_TASK = {
+
+    AgentType.BROWSING: {
         "tools": [
             browse_webpage,
             search_wikipedia,
@@ -125,9 +138,94 @@ AGENT_SPECIFICATIONS = {
             read_scratchpad, 
             update_scratchpad,
             inspect_file_type_and_structure,
+            ask_user_for_input
         ],
         "name": "orchestrator",
-        "description": "Director of the agents, does most  of the heavy lifting."
+        "description": "Director of the agents, does most of the heavy lifting."
+    }
+}
+
+AGENT_ORCHESTRATOR = {
+    AgentType.Research_Orchestrator: {
+        "managed_agents": [
+            "browsing", 
+            "pdf_opening", 
+            "file_searching", 
+            "file_managing"
+        ],
+        "name": "research_orchestrator",
+        "description": "Scours the internet (general web, academic papers, code repositories) to develop a creative, high-level plan for tackling a novel or complex problem. It synthesizes its findings into a proposed strategy with clear, actionable steps. Worker agents it spawns: web_navigator_agent, pdf_document_agent, file_system_search_agent, file_managing_agent. Core tools: update_scratchpad, write_file."
+    },
+    AgentType.EnvironmentSetup_Orchestrator: {
+        "managed_agents": [
+            "package_installing",
+            "file_managing"
+        ],
+        "name": "environmentsetup_orchestrator",
+        "description": "Ensures the project environment is correctly set up. Installs required base packages and creates the necessary directory structure for the project. Worker agents it spawns: package_installing_agent, file_managing_agent. Core tools: execute_shell_command, update_scratchpad."
+    },
+    AgentType.DataIngestionValidation_Orchestrator: {
+        "managed_agents": [
+            "browsing", 
+            "pdf_opening", 
+            "file_searching", 
+            "data_inspecting", 
+            "file_managing"
+        ],
+        "name": "dataingestionvalidation_orchestrator",
+        "description": "Manages the entire data acquisition and validation process. Finds, downloads, and inspects data from web or local sources, checks for quality and consistency, and prepares a preliminary data report. Worker agents it spawns: web_navigator_agent, pdf_document_agent, file_system_search_agent, data_file_inspector_agent, file_managing_agent. Core tools: execute_python_script, read_scratchpad, update_scratchpad."
+    },
+    AgentType.ExploratoryDataAnalysis_Orchestrator: {
+        "managed_agents": [
+            "data_inspecting",
+            "file_managing",
+            "package_installing"
+        ],
+        "name": "exploratorydataanalysis_orchestrator",
+        "description": "Performs a deep dive into the validated data. Its goal is to understand data distributions, find correlations, identify anomalies, and generate summary statistics and visualizations to inform the next steps. Worker agents it spawns: data_file_inspector_agent, file_managing_agent, package_installing_agent. Core tools: execute_python_script, read_scratchpad, update_scratchpad."
+    },
+    AgentType.DataPreprocessingFeatureEngineering_Orchestrator: {
+        "managed_agents": [
+            "file_managing",
+            "data_inspecting",
+            "package_installing"
+        ],
+        "name": "datapreprocessingfeatureengineering_orchestrator",
+        "description": "Transforms the raw data into a clean, model-ready format. It handles tasks like normalization, scaling, encoding, and imputation. Crucially, it also generates new features based on EDA insights. Worker agents it spawns: file_managing_agent, data_file_inspector_agent, package_installing_agent. Core tools: execute_python_script, read_scratchpad, update_scratchpad."
+    },
+    AgentType.ModelTraining_Orchestrator: {
+        "managed_agents": [
+            "file_managing",
+            "package_installing",
+            "data_inspecting"
+        ],
+        "name": "modeltraining_orchestrator",
+        "description": "Selects appropriate model architectures and trains them on the preprocessed data. It logs training parameters and initial performance metrics, saving the trained model artifacts. Worker agents it spawns: file_managing_agent, package_installing_agent. Core tools: execute_python_script, execute_shell_command, read_scratchpad, update_scratchpad."
+    },
+    AgentType.HyperparameterOptimization_Orchestrator: {
+        "managed_agents": [
+            "file_managing",
+            "data_inspecting"
+        ],
+        "name": "hyperparameteroptimization_orchestrator",
+        "description": "Systematically tunes the hyperparameters of a trained model to maximize performance. It can employ strategies like grid search, random search, or more advanced methods, often using cross-validation. Worker agents it spawns: file_managing_agent. Core tools: execute_python_script, read_scratchpad, update_scratchpad."
+    },
+    AgentType.ModelEvaluation_Orchestrator: {
+        "managed_agents": [
+            "data_inspecting",
+            "file_managing"
+        ],
+        "name": "modelevaluation_orchestrator",
+        "description": "Conducts a rigorous evaluation of the final, tuned model on a hold-out test set. It calculates a comprehensive set of performance metrics and generates comparison tables if multiple models were trained. Worker agents it spawns: data_file_inspector_agent, file_managing_agent. Core tools: execute_python_script, read_scratchpad, update_scratchpad."
+    },
+    AgentType.Reporting_Orchestrator: {
+        "managed_agents": [
+            "browsing",
+            "file_searching",
+            "data_inspecting"
+        ],
+        "name": "reporting_orchestrator",
+        "description": "Synthesizes the entire project lifecycle or a complex phase into a final, human-readable report. It gathers results, code, and insights from the scratchpad and project files to generate a summary document. Worker agents it spawns: web_navigator_agent, file_system_search_agent, data_file_inspector_agent. Core tools: execute_python_script, read_file_content, write_file."
     }
 }
 
@@ -159,11 +257,34 @@ class AgentOrchestrator:
         logger.info(f"AgentOrchestrator initialized with LLM model ID: {self.llm_model_id}")
 
         self.default_agent_config = {
-            "additional_authorized_imports": [
-                "os", "json", "sys", "collections", "glob", "shutil",
-                "pandas", "numpy", "PIL", "matplotlib", "sklearn",
-                "torch", "torchvision", "tensorflow", "logging" 
-            ],
+            # "additional_authorized_imports": ["os", 
+            #                                   "json", 
+            #                                   "sys", 
+            #                                   "collections", 
+            #                                   "glob", 
+            #                                   "shutil",
+            #                                   "pandas",
+            #                                   "pandas.*",
+            #                                   "numpy", 
+            #                                   "numpy.*", 
+            #                                   "PIL", 
+            #                                   "PIL.*", 
+            #                                   "matplotlib", 
+            #                                   "matplotlib.*", 
+            #                                   "scipy",
+            #                                   "scipy.*",
+            #                                   "h5py",
+            #                                   "sklearn",
+            #                                   "sklearn.*",
+            #                                   "torch", 
+            #                                   "torch.*",
+            #                                   "torchvision", 
+            #                                   "tensorflow", 
+            #                                   "logging",
+            #                                   "posixpath",
+
+            # ],
+            "additional_authorized_imports": ["*"],
             "stream_outputs": True,
             "max_steps": 50,
             "name": None,
@@ -193,8 +314,7 @@ class AgentOrchestrator:
             elif self.llm_provider=="openai": # note that openai here stands for the OpenAIServerModel, we can use gemini with this model for instance
                 model_instance = OpenAIServerModel(model_id=self.llm_model_id,
                                         api_key=os.environ[kwargs["api_key"]],
-                                        # Google Gemini OpenAI-compatible API base URL
-                                        api_base=kwargs.get("api_base"), #https://willma.liza.surf.nl/api/v0
+                                        api_base=kwargs.get("api_base")
                                     )
             
             logger.info(f"Transformer Model initialized successfully for model: {self.llm_model_id}")
@@ -258,7 +378,7 @@ class AgentOrchestrator:
             logger.error(str(e))
             raise
         
-        spec = AGENT_SPECIFICATIONS.get(agent_type)
+        spec = AGENT_SINGLE_TASK.get(agent_type)
         if not spec:
             raise ValueError(f"No specification found for agent type: {agent_type}")
         return self._create_agent_instance(
@@ -301,13 +421,12 @@ class AgentOrchestrator:
 
     def setup_orchestrator(
         self,
-        specialized_agent_strings: List[str],
         manager_agent_class: Type[CodeAgent] = CodeAgent,
         manager_name: str = "agent_orchestrating",
         manager_description: Optional[str] = None,
         manager_override_config: Optional[Dict[str, Any]] = None,
-        specialized_agent_configs: Optional[Dict[str, Dict[str, Any]]] = None
-    ):
+        agent_configs: Optional[Dict[str, Dict[str, Any]]] = None
+    ) -> CodeAgent:
         """
         Sets up a manager agent with a list of specialized sub-agents.
         The created manager agent is assigned to `self.agent`.
@@ -321,13 +440,19 @@ class AgentOrchestrator:
             specialized_agent_override_configs: Dict mapping agent_type_str to its override_config.
         """
         managed_agents: List[CodeAgent] = []
-        if specialized_agent_configs is None:
-            specialized_agent_configs = {}
+        agent_type = AgentType.from_string(manager_name)
+        specialized_agent_strings = AGENT_ORCHESTRATOR.get(agent_type)["managed_agents"]
+
+        if agent_configs is None:
+            agent_configs = {}
 
         for agent_type_str in specialized_agent_strings:
             try:
-                override_cfg = specialized_agent_configs.get(agent_type_str)
-                agent = self.create_specialized_agent(agent_type_str, override_config=override_cfg)
+                override_cfg = agent_configs.get(agent_type_str)
+                # TODO: config hardcoded to None because we have a few fields that are incompatible with smolagents
+                agent = self.create_specialized_agent(agent_class=manager_agent_class,
+                                                      agent_type_str=agent_type_str, 
+                                                      override_config=None)
                 managed_agents.append(agent)
             except Exception as e:
                 logger.error(f"Failed to create specialized agent of type '{agent_type_str}': {e}", exc_info=True)
@@ -337,13 +462,15 @@ class AgentOrchestrator:
         if manager_description is None:
             manager_description = (
                 "I am a coordinator agent. I can delegate tasks to specialized agents "
-                "for web Browse, PDF processing, file searching, and data inspection. "
+                "for web Browse, PDF processing, file searching/managing, data inspection, and package installing. "
                 "Clearly state your high-level goal, and I will manage the sub-tasks."
             )
-        agent_type = AgentType.from_string("agent_orchestrating")
-        orchestrator_tools = AGENT_SPECIFICATIONS.get(agent_type)["tools"]
 
-        self.agent = self._create_agent_instance(
+        # this class sets up orchestrator agents solely
+        # get default agent orchestrating tools
+        orchestrator_tools = AGENT_SINGLE_TASK.get(AgentType.from_string("agent_orchestrating"))["tools"]
+
+        agent = self._create_agent_instance(
             tools=orchestrator_tools,
             name=manager_name,
             description=manager_description,
@@ -351,52 +478,55 @@ class AgentOrchestrator:
             managed_agents=managed_agents,
             override_config=manager_override_config
         )
-        logger.info(f"Manager agent '{self.agent.name}' set up with {len(managed_agents)} specialized agents.")
+        logger.info(f"Manager agent '{agent.name}' set up with {len(managed_agents)} specialized agents.")
 
-
-    def setup_agent(
-        self,
-        list_of_tools: List[callable],
-        agent_class: Type[MultiStepAgent] = CodeAgent,
-        agent_config: Optional[Dict[str, Any]] = None,
-        name: str = None,
-        description: str = None,
-        orchestrator: bool = False # Might not need this boolean
-    ) -> CodeAgent:
-        """
-        Initializes and sets up an agent instance.
-
-        Args:
-            list_of_tools (List[callable]): A list of tool functions callable by the agent.
-            agent_class (Type[MultiStepAgent]): The class of the agent to instantiate. Defaults to CodeAgent.
-            agent_config (Dict[str, Any], optional): Configuration dictionary for the agent.
-        """
-        effective_agent_config = agent_config or {}
-        agent_name = agent_class.__name__
-
-        self.default_agent_configs["name"] = name
-        self.default_agent_configs["description"] = description
-
-        # Merge, with agent_config taking precedence
-        merged_config = {**self.default_configs_configs, **effective_agent_config}
-
-        try:
-            agent = agent_class(
-                tools=list_of_tools,
-                model=self.model,
-                **merged_config
-            )
-
-            if orchestrator:
-                self.agent = agent
-
-            model_id_str = self.model.model_id if hasattr(self.model, 'model_id') else 'N/A'
-            logger.info(f"{agent_name} initialized successfully with {len(list_of_tools)} tools, model {model_id_str}, and config: {merged_config}")
-        except Exception as e:
-            logger.error(f"Error initializing {agent_name} with config {merged_config}: {e}", exc_info=True)
-            raise RuntimeError(f"{agent_name} initialization failed: {e}")
-        
         return agent
+
+
+    def setup_main_orchestrator(self,
+                                orchestrator_agent_strings: List[str],
+                                orchestrator_configs: Optional[Dict[str, Dict[str, Any]]] = None) -> None:
+        
+        managed_orchestrators: List[CodeAgent] = []
+        if orchestrator_configs is None:
+            orchestrator_configs = {}
+        for agent_type_str in orchestrator_agent_strings:
+            try:
+                override_cfg = orchestrator_configs.get(agent_type_str)
+                agent_type = AgentType.from_string(agent_type_str)
+                manager_description = AGENT_ORCHESTRATOR.get(agent_type)["description"]
+                # TODO: config hardcoded to None because we have a few fields that are incompatible with smolagents
+                orchestrator_agent = self.setup_orchestrator(manager_agent_class=CodeAgent,
+                                                             manager_name=agent_type_str, 
+                                                             manager_description=manager_description,
+                                                             agent_configs=None)
+                
+                managed_orchestrators.append(orchestrator_agent)
+            except Exception as e:
+                logger.error(f"Failed to create specialized agent of type '{agent_type_str}': {e}", exc_info=True)
+                # Decide behavior: raise, or log and continue
+                raise ValueError(f"Setup failed for specialized agent: {agent_type_str}") from e
+        
+        manager_description = (
+                "You are the **Main Orchestrator Agent**, the master director of a complex, end-to-end machine learning project.  "
+                "Your primary function is not to perform tasks yourself, but to intelligently decompose a high-level goal into logical phases and delegate these phases to specialized **Role Orchestrator Agents**."
+                "You are the strategic brain of the operation."
+            )
+        
+        # this class sets up orchestrator agents solely
+        agent_type = AgentType.from_string("agent_orchestrating")
+        orchestrator_tools = AGENT_SINGLE_TASK.get(agent_type)["tools"]
+
+        # TODO: config hardcoded to None because we have a few fields that are incompatible with smolagents
+        self.main_orchestrator = self._create_agent_instance(
+            tools=orchestrator_tools,
+            name="main_orchestrator",
+            description=manager_description,
+            agent_class=CodeAgent,
+            managed_agents=managed_orchestrators,
+            override_config=None
+        )
+        logger.info(f"Manager agent '{self.main_orchestrator.name}' set up with {len(managed_orchestrators)} specialized agents.")
 
     # For now only runs an orchestrator CodeAgent
     def run_orchestrator(
@@ -416,7 +546,7 @@ class AgentOrchestrator:
         Returns:
             Any: The final answer or output from the agent's run for this phase.
         """
-        if not self.agent:
+        if not self.main_orchestrator:
             logger.error("Agent has not been set up. Call setup_agent() first.")
             raise RuntimeError("Agent has not been set up. Call setup_agent() first.")
 
@@ -434,7 +564,7 @@ class AgentOrchestrator:
         logger.debug(f"Calling {agent_name}.run() with kwargs: {run_kwargs}")
 
         try:
-            final_output = self.agent.run(directive, **run_kwargs)
+            final_output = self.main_orchestrator.run(directive, **run_kwargs)
             logger.info(f"Agent phase for {agent_name} finished.")
             if final_output is not None:
                 final_output_str = str(final_output)

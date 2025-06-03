@@ -1,6 +1,7 @@
 import os
 from typing import List, Dict
 
+   
 class Directive:
 
     def __init__(self, initial_prompt_details: Dict):
@@ -26,12 +27,65 @@ class Directive:
             You can use the `data_file_inspector_agent` to read detailed initial instructions from it.
             Log your progress, findings, and plans directly to it (e.g. using the `update_scratchpad` tool or a similar direct logging capability).
             Log as much as you can.
+            
+            {self.main_orchestrator_directive()}
 
-            If you are creating code, let the code be written as cleanly as possible. Use functions, keep the code modular, use typing and
-            adhere to high software engineering standards. Log as much as possible in the scratchpad, this will be used to verify and check what you have done.
-            Write very detailed account in the manifests and in the scratchpad. Keep using the `file_system_search_agent` to understand how you are changing
-            the directories and files. Always start by inspecting the directories and their contents recursively; you need to know if there are any files
-            that you can use. Be creative and try to do max effort, your attempt will be graded!
+            **// EXAMPLE OF DETAILED DELEGATION //**
+            **Context:** Imagine the `ExploratoryDataAnalysis_Orchestrator` has just finished. You have reviewed its findings. Now, you must spawn the `DataPreprocessingFeatureEngineering_Orchestrator`. Your prompt to it should be structured with the following level of detail.
+
+            **(This is the prompt you would generate and pass to the new orchestrator)**
+
+            **To:** `DataPreprocessingFeatureEngineering_Orchestrator`
+            **From:** `Main_Orchestrator`
+            **Subject:** Execute Data Preprocessing and Feature Engineering
+
+            Your task is to transform our raw data into a clean, model-ready state. Follow these steps methodically.
+
+            **Essential Information:**
+            * **Project Scratchpad:** `{self.scratchpad_file}` - Contains the overall project state and logs.
+            * **EDA Manifest:** `{self.root_path}/manifests/eda/manifest.json` - Contains the detailed analysis, data quality issues, and proposed transformations from the previous phase.
+
+            **Your Detailed Plan:**
+
+            1.  **Review Inputs:**
+                * Start by using the `data_file_inspector_agent` to read the project `{self.scratchpad_file}` and the EDA Manifest to fully understand the required transformations.
+
+            2.  **Implement Preprocessing Script:**
+                * **Task:** Write, execute, and verify the main data preprocessing script.
+                * **Action:** Based on the plan in the EDA manifest, write a Python script. Use the `file_managing_agent` to save it as `{self.scratchpad_file}/scripts/data_preprocessing.py`.
+                * **Script Logic:**
+                    * Load the raw data specified in the manifest.
+                    * Implement all planned steps: data cleaning (handling nulls), transformations (e.g., log transforms), categorical variable encoding (e.g., one-hot), and numerical scaling (e.g., StandardScaler).
+                    * Use the `file_managing_agent` to create a `{self.scratchpad_file}/data/processed/` directory.
+                    * Save the fully processed data to this directory in an efficient format (e.g., Parquet or CSV).
+                * **Dependencies:** Check `{self.scratchpad_file}/requirements.txt` using the `data_file_inspector_agent`. If your script requires new libraries (e.g., `scikit-learn`), use the `package_installing_agent` to install them and append them to the requirements file.
+                * **Execution:** Execute the script using your `execute_python_script` tool. Carefully analyze any output or errors. Debug iteratively. If you cannot resolve an issue, use `ask_user_for_input`.
+                * **Logging:** Log the script's final location, the path to the processed data, and any important observations in the `{self.scratchpad_file}`.
+
+            3.  **Plan and Implement Feature Engineering:**
+                * **Task:** Generate new, valuable features from the data.
+                * **Action:** Review the EDA findings for opportunities (e.g., creating polynomial features, interaction terms, or time-based features).
+                * **Implementation:** You can either add to the existing preprocessing script or create a new one (`{self.scratchpad_file}/scripts/feature_engineering.py`). Use the `file_managing_agent` to manage the file.
+                * **Confirmation:** If the strategy is complex, briefly outline your proposed features in the scratchpad and use `ask_user_for_input` for confirmation before implementing.
+                * **Execution:** Ensure the engineered features are saved as part of the final processed dataset.
+                * **Logging:** Log the feature engineering strategy, implementation details, and outcomes in the `{self.scratchpad_file}`.
+
+            4.  **Verify Processed Data Quality:**
+                * **Task:** Confirm the final data is ready for modeling.
+                * **Action:** Use the `data_file_inspector_agent` to perform a final check. Load the processed data and verify its shape, data types, and a few sample rows. Ensure there are no obvious errors.
+                * **Logging:** Log the final verification results (e.g., "Verification successful. Final dataset has shape [X, Y].") in the `{self.scratchpad_file}`.
+
+            5.  **Conclude Your Phase:**
+                * **Task:** Summarize your work and create a manifest for the next phase.
+                * **Action:** Use the `file_managing_agent` to create a new manifest file at `{self.scratchpad_file}/manifests/preprocessing/manifest.json`.
+                * **Manifest Contents:** The JSON file must detail:
+                    * `script_paths`: A list of all scripts created (e.g., `['scripts/data_preprocessing.py']`).
+                    * `transformations_applied`: A description of all cleaning, scaling, and encoding steps.
+                    * `features_created`: A description of all new engineered features.
+                    * `processed_data_path`: The final path to the model-ready dataset.
+                    * `processed_data_shape`: The shape of the final dataset.
+                * **Final Step:** Write a concluding message in the `{self.scratchpad_file}` indicating that data preprocessing and feature engineering are complete and you are finished.
+
             """
     # TODO: function should get list of strings as input
     def get_directives(self, directive_key: str = "all") -> List[str]:
@@ -39,228 +93,87 @@ class Directive:
         Returns a list of directive strings based on the provided key.
         Args:
             directive_key: Specifies which directives to return.
-                           "all": returns all defined directives in sequence.
-                           "phase_1": returns inspect_and_understand_data_1.
-                           "phase_2": returns eda_preprocessing_directive_2.
-                           "phase_3": returns data_preprocessing_and_feature_engineering_3.
-                           "phase_4": returns model_selection_and_initial_training_4.
-                           # "phase_5": returns model_evaluation_and_iteration_planning_5.
-                           Default is "all".
+                            "all": returns all defined directives in sequence.
+                            "directive_0": returns main_orchestrator_directive.
+                            Default is "all".
         Returns:
             A list of strings, where each string is a directive for a phase.
         """
         directives_map = {
-            "phase_1": [self.inspect_and_understand_data_1()],
-            "phase_2": [self.eda_preprocessing_directive_2()],
-            "phase_3": [self.data_preprocessing_and_feature_engineering_3()],
-            "phase_4": [self.model_selection_and_initial_training_4()],
-            #"phase_5": [self.model_evaluation_and_iteration_planning_5()],
+            "directive_0": [self.main_orchestrator_directive()],
         }
         if directive_key == "all":
             return [
-                self.inspect_and_understand_data_1(),
-                self.eda_preprocessing_directive_2(),
-                self.data_preprocessing_and_feature_engineering_3(),
-                self.model_selection_and_initial_training_4(),
-                #self.model_evaluation_and_iteration_planning_5(),
+                self.main_orchestrator_directive(),
             ]
         return directives_map.get(directive_key, [f"Error: Unknown directive key '{directive_key}'."])
-    
-    
-    def inspect_and_understand_data_1(self) -> str:
+
+
+    def main_orchestrator_directive(self) -> str:
         """
         Constructs the detailed agent directive string for EDA and preprocessing.
         Args:
             initial_prompt_details: Dictionary containing the initial user prompt details.
         Returns:
-            A string containing the agent directive.
+            A string containing the orchestrator directive.
         """
 
         return f"""
-        {self.initial_prompt}
+                **// SYSTEM PROMPT: MAIN ORCHESTRATOR AGENT //**
 
-        Your current objective: Phase 1 - Understand Task and Data Inspection.
+                **Your Role:** You are the **Main Orchestrator Agent**, the master director of a complex, end-to-end machine learning project. Your primary function is not to perform tasks yourself, but to intelligently decompose a high-level goal into logical phases and delegate these phases to specialized **Role Orchestrator Agents**. You are the strategic brain and master record-keeper of the operation.
 
-        Follow these general steps, using your available sub-agents and reasoning capabilities. Finish this phase to the best
-        of your ability! Keep in mind this is a high stakes project, everything you do will have impact further down the line.
+                **Your Core Mandate:**
+                1.  **Master Logging:** You must maintain a continuous and detailed log of the entire project in your own primary scratchpad file. For every step, you will log:
+                    * **Your Intent:** What you are about to do (e.g., "Planning to spawn `DataIngestionValidation_Orchestrator`.").
+                    * **Your Action:** The specific prompt or command you are issuing.
+                    * **The Outcome:** After a sub-task orchestrator finishes, you must log its completion, read its final report file (e.g., `subtask_X_report.txt`), and append a summary of that report—or the full report if concise—into your own scratchpad.
+                    * **Your Next Decision:** The conclusion you draw from the report and what you will do next.
 
-        1.  **Understand Task & Locate Data:**
-            * The Raw Data Location contains the data you'll work with.
-            * Confirm this path. If it seems unusable, incorrect, or missing, first use `ask_user_for_input` to request clarification.
-            * Log any understanding and stuff worth remembering in the scratchpad.txt (e.g., using the `update_scratchpad` tool).
+                2.  **Goal Definition & Planning:**
+                    * Thoroughly analyze the user's initial request and log your understanding.
+                    * If the path forward is unclear, your first step should be to invoke the **`Research_Orchestrator`**. Log this decision.
 
-        2.  **Initial Data Inspection:**
-            * Use the `file_system_search_agent` to list contents of the Project root path (recursive, max_depth 2-3).
-            * Identify a few sample files. For each, use the `data_file_inspector_agent` to inspect its type and structure.
-            * Summarize and log findings in the scratchpad.txt.
+                3.  **Task Decomposition & Delegation:**
+                    * For each step in your plan, formulate a clear, concise, and **highly detailed** prompt for the appropriate Role Orchestrator. Log the full prompt you are sending.
 
-        3.  **Plan Preprocessing:**
-            * Based on the previous results, plan the necessary preprocessing steps.
-            * If the current findings are ambiguous for planning or if choices about preprocessing strategy are critical and uncertain, use `ask_user_for_input` to get user feedback or decisions.
-            * Plan a manifest file (e.g., `{self.root_path}/manifests/phase_1/manifest.json`). Add as much information as you can. 
-            * Log your preprocessing plan in the scratchpad.txt.
-            
-        4.  **Conclude Phase 1:**
-            * Ensure all planned tasks are "complete". If any are outstanding, address them or make a note in the scratchpad.txt about why they were not completed.
-            * Summarize all actions taken, the current state of the data, and the preprocessing plan in the scratchpad.txt.
-            * Indicate that Phase 1 (Understanding and Data Inspection) is complete and you are ready for the next phase.
+                4.  **Task Completion and Reporting Mandate:**
+                    * You must instruct every Role Orchestrator that its final action is to write a detailed summary of its execution into a dedicated file (e.g., `subtask_1_environment_setup.txt`).
+                    * Alternatively, for complex phases, you may spawn the **`Reporting_Orchestrator`** to generate this summary report. Log this delegation.
 
-        Always provide clear reasoning for your actions. Use the scratchpad.txt for detailed logging of your progress, observations, and plans.
-        Do not hesitate to use `ask_user_for_input` when you face ambiguity, critical errors you cannot resolve, or need a decision that impacts the workflow.
-        Start by using the `data_file_inspector_agent` to read the scratchpad.txt and any manifests for existing notes, if available, under `{self.root_path}/manifests/phase_0/dataset_manifest.json`.
-        It is imperative that you end the phase by using the `file_managing_agent` to write your findings into the `{self.root_path}/manifests/phase_1/manifest.json`)!
-        
-        Inspect the `{self.root_path}/src/` subdirectories and/or files using the `file_system_search_agent` or `data_file_inspector_agent`; some default empty files have been set up for you. You can use these if you need, potentially with the `file_managing_agent`.
-        """
+                5.  **Decision Making & Iteration:**
+                    * After a Role Orchestrator completes its task, read its summary report and log that you have done so.
+                    * Based on the report's content, decide the next step and log your reasoning (e.g., "Report from EDA shows high data skew; will instruct Preprocessing orchestrator to apply a log transform.").
 
-    def eda_preprocessing_directive_2(self) -> str:
-        """
-        Constructs the detailed agent directive string for EDA and preprocessing.
-        Returns:
-            A string containing the agent directive.
-        """
+                6.  **Human-in-the-Loop:**
+                    * If you are stuck, log the situation and your reasoning for escalating. Then, use the `ask_user_for_input` tool.
 
-        return f"""
-        {self.initial_prompt}
+                ---
 
-        Your current objective: Phase 2 - EDA and Data Preprocessing.
+                **Your Available Role Orchestrators (Your Team):**
+                * **`Research_Orchestrator`**: For creating a strategic plan for novel problems.
+                * `EnvironmentSetup_Orchestrator`: Prepares the workspace, directories, and packages.
+                * `DataIngestionValidation_Orchestrator`: For data gathering and quality checks.
+                * `ExploratoryDataAnalysis_Orchestrator`: To understand the data.
+                * `DataPreprocessingFeatureEngineering_Orchestrator`: To prepare data for modeling.
+                * `ModelTraining_Orchestrator`: To build the initial models.
+                * `HyperparameterOptimization_Orchestrator`: To fine-tune the best model.
+                * `ModelEvaluation_Orchestrator`: To get the final performance metrics on the test set.
+                * `Reporting_Orchestrator`: To summarize a complex phase or the entire project.
 
-        Follow these general steps, using your available sub-agents and reasoning capabilities. Finish this phase to the best
-        of your ability! Keep in mind this is a high stakes project, everything you do will have impact further down the line.
-        You are at liberty to use as many sub-agents as you want to perform the exploratory data analysis as professionally as possible.
-        Use the `Browse_agent` if needed for research or to find EDA techniques.
+                ---
 
-        1.  **Plan and Execute EDA:**
-            * Based on `Data Type` and inspection, plan EDA. If the plan is unclear or you need to make choices with significant impact (e.g., how to handle a large amount of missing data), use `ask_user_for_input`.
-            * Generate Python EDA script. Use the `file_managing_agent` to save it to `{self.root_path}/scripts/exploratory_data_analysis.py`.
-                * The script should print summaries and save plots. Use the `file_managing_agent` to create the directory `{self.root_path}/results/plots/eda/` if it doesn't exist, and ensure the script saves plots there.
-                * Optionally, the script can save an `eda_report.json`. Use the `file_managing_agent` to save it to `{self.root_path}/data/interim/`.
-            * If you identify the need for new Python libraries for the EDA script:
-                * First, use the `data_file_inspector_agent` to check if `requirements.txt` exists and if the libraries are already listed.
-                * If not listed or the file doesn't exist, use the `package_installing_agent` to add them to `{self.root_path}/requirements.txt`. Ensure each library is on a new line.
-            * Execute EDA script using `execute_python_script` (this is an orchestrator capability).
-            * If the script execution fails:
-                * Analyze the error output.
-                * Attempt to debug common issues (e.g., incorrect paths, missing libraries you forgot to add).
-                * If you cannot resolve it, use `ask_user_for_input` to present the error and ask for help or suggestions. E.g., "The EDA script failed with the following error: [...]. How should I proceed?".
+                **Your Direct-Use Tools:**
+                * **State Management & Logging:** `read_scratchpad`, `update_scratchpad`.
+                * **Human Interaction:** `ask_user_for_input`.
+                * **High-Level File Inspection:** `list_directory_contents`, `read_file_content`.
+                * **Emergency & Oversight:** `execute_shell_command`.
 
-        2.  **Plan Preprocessing:**
-            * Based on EDA results and `Target Input Tensor Shape`, plan the necessary preprocessing steps.
-            * If EDA findings are ambiguous for planning or if choices about preprocessing strategy are critical and uncertain, use `ask_user_for_input` to get user feedback or decisions.
-            * Plan a manifest file (e.g., `{self.root_path}/manifests/phase_2/dataset_manifest.json`). Add as much information as you can.
-            * Log your preprocessing plan in the scratchpad.txt.
+                ---
 
-        3.  **Conclude Phase 2:**
-            * Ensure all planned tasks are "complete". If any are outstanding, address them or make a note in the scratchpad.txt about why they were not completed.
-            * Summarize all actions taken, key findings from EDA, the current state of the data, and the preprocessing plan in the scratchpad.txt.
-            * Indicate that Phase 2 (EDA and Data Preprocessing) is complete and you are ready for the next phase.
-
-        Always provide clear reasoning for your actions. Use the scratchpad.txt for detailed logging.
-        Do not hesitate to use `ask_user_for_input` when you face ambiguity, critical errors, or need a decision.
-        Start by using the `data_file_inspector_agent` to read the scratchpad.txt for any existing notes and the manifest from the previous phase under `{self.root_path}/manifests/phase_1/manifest.json`.
-        It is imperative that you end the phase by using the `file_managing_agent` to write your findings into `{self.root_path}/manifests/phase_2/manifest.json`)!
-        """
-
-    def data_preprocessing_and_feature_engineering_3(self) -> str:
-        """
-        Constructs the detailed agent directive string for implementing data preprocessing and feature engineering.
-        """
-        return f"""
-        {self.initial_prompt}
-
-        Your current objective: Phase 3 - Data Preprocessing Implementation and Feature Engineering.
-
-        Follow these general steps, using your available sub-agents and reasoning capabilities.
-        Start by using the `data_file_inspector_agent` to read {self.scratchpad_file}, and the manifest from Phase 2: `{self.root_path}/manifests/phase_2/manifest.json`.
-
-        1.  **Implement Preprocessing Script:**
-            * Add tasks: "Develop data preprocessing script", "Execute preprocessing script", "Verify processed data".
-            * Based on the detailed plan in the Phase 2 manifest, write a Python script. Use the `file_managing_agent` to save it (e.g., as `{self.root_path}/scripts/data_preprocessing.py`).
-                * This script should load raw or interim data (as identified in previous phases).
-                * Apply all planned cleaning, transformation, encoding, and scaling steps.
-                * Save the processed data to a designated output directory (e.g., `{self.root_path}/data/processed/`). Use the `file_managing_agent` to create this directory. Ensure output format is suitable for model training (e.g., CSV, Parquet, NumPy arrays).
-            * Check and update `{self.root_path}/requirements.txt`. Use the `data_file_inspector_agent` to read it, and the `package_installing_agent` to append new libraries if needed.
-            * Execute the script using `execute_python_script` (orchestrator capability). Analyze output/errors. Debug or use `ask_user_for_input` if issues arise.
-            * Log script location, processed data path, and any important observations in {self.scratchpad_file}.
-
-        2.  **Plan and Implement Feature Engineering (if applicable):**
-            * Add task: "Plan and implement feature engineering".
-            * Review EDA findings and the `Project Task`. Identify opportunities for feature engineering.
-            * If not already part of the preprocessing script, you might create a separate script (e.g., `{self.root_path}/scripts/feature_engineering.py`) or modify the existing one. Use the `file_managing_agent` to manage this script file.
-            * If the strategy for feature engineering is complex or has many alternatives, briefly outline your proposal in the scratchpad and use `ask_user_for_input` for confirmation or guidance.
-            * Implement the chosen feature engineering steps. This might involve re-running parts of your preprocessing script or executing a new one.
-            * Ensure engineered features are saved alongside or as part of the processed dataset.
-            * Log the feature engineering plan, implementation details, and outcomes in {self.scratchpad_file}.
-
-        3.  **Verify Processed Data Quality:**
-            * Add task: "Verify quality and structure of processed data".
-            * Perform a quick inspection of the processed data. Use the `data_file_inspector_agent` to load and check shape, data types, and a sample of the processed data.
-            * Confirm it aligns with expectations and the `Target Input Tensor Shape` (if provided).
-            * Log verification results in {self.scratchpad_file}.
-
-        4.  **Conclude Phase 3:**
-            * Summarize actions, details of implemented preprocessing and feature engineering, and final processed data characteristics in {self.scratchpad_file}.
-            * Create the manifest: `{self.root_path}/manifests/phase_3/processed_data_manifest.json`. This file should detail:
-                * Path to the preprocessing/feature engineering script(s).
-                * Description of all transformations and features created.
-                * Path to the final processed dataset(s).
-                * Shape and data types of the processed data.
-                * Any relevant statistics about the processed data (e.g., number of features, samples).
-            * Use the `file_managing_agent` to create this manifest.
-            * Indicate in {self.scratchpad_file} that Phase 3 is complete.
-
-        Remember to maintain clean, modular code in your scripts.
-        """
-    
-    def model_selection_and_initial_training_4(self) -> str:
-        """
-        Constructs the detailed agent directive string for model selection and initial training.
-        """
-        return f"""
-        {self.initial_prompt}
-
-        Your current objective: Phase 4 - Model Selection and Initial Training.
-
-        Follow these general steps using your available sub-agents.
-        Start by using the `data_file_inspector_agent` to read {self.scratchpad_file} and the manifest from Phase 3: `{self.root_path}/manifests/phase_3/manifest.json`.
-
-        1.  **Review Processed Data and Task for Model Selection:**
-            * Use the `data_file_inspector_agent` to load information about the processed data from the Phase 3 manifest.
-            * Based on this, research suitable machine learning models. Use the `Browse_agent` (utilizing its search tools like arXiv, Google Scholar, GitHub) for ideas or implementations if needed.
-            * This is the most important step for a successful completion of this phase, make sure to use the scratchpad to write down your thoughts and research which model is the best one for this task.
-            * Select a candidate model appropriate for the task. Justify your choices in {self.scratchpad_file}. If uncertain about choices, use `ask_user_for_input`.
-
-        2.  **Develop Training Script(s):**
-            * Create a Python script (e.g., `{self.root_path}/src/model_training.py`). Use the `file_managing_agent` to write this file.
-            * The script should:
-                * Load the processed data (path from Phase 3 manifest).
-                * Implement data splitting (e.g., train, validation, test sets). Ensure this is done consistently.
-                * Define and implement the selected model architectures using the `Target Framework`.
-                * Set up the training loop, including loss function, optimizer, and relevant metrics.
-                * Include functionality to save trained model artifacts and training logs/metrics. Use the `file_managing_agent` to create directories like `{self.root_path}/models/model_name/` and `{self.root_path}/results/training_logs/`.
-            * Check and update `{self.root_path}/requirements.txt` for any new libraries (e.g., scikit-learn, torch). Use the `data_file_inspector_agent` to read the file and the `package_installing_agent` to append new libraries.
-            * Use functions, typing and classes. Make sure everything is modularized.
-
-        3.  **Perform Initial Training Runs:**
-            * Add task: "Execute initial training for candidate models".
-            * Execute the training script for each candidate model using `execute_python_script` (orchestrator capability).
-            * Monitor the training process (if possible, through script output).
-            * If training fails or produces unexpected errors, analyze the output, debug the script, or use `ask_user_for_input` for assistance.
-            * Log paths to saved models, training logs, and key performance metrics (e.g., training/validation loss and accuracy) in {self.scratchpad_file}. You can use `log_agent_message` for detailed logs if useful (orchestrator capability).
-
-        4.  **Conclude Phase 4:**
-            * Summarize actions, selected models, training setup, and initial training results in {self.scratchpad_file}.
-            * Create the manifest: `{self.root_path}/manifests/phase_4/manifest.json`. This JSON file should include:
-                * List of models trained.
-                * Path to the training script(s).
-                * Details of data splits.
-                * Paths to saved model artifacts for each model.
-                * Key initial training/validation metrics for each model.
-                * Path to any training log files.
-            * Use the `file_managing_agent` to create this manifest.
-            * Indicate in {self.scratchpad_file} that Phase 4 is complete.
-
-        Always provide clear reasoning for your actions. Use the scratchpad.txt for detailed logging.
-        Do not hesitate to use `ask_user_for_input` when you face ambiguity, critical errors, or need a decision.
-        Use the `Browse_agent` for inspiration on which type of model or method should be best suited for this type of task; work to the best of your ability to improve the model.
-        """
+                Make sure that when you prompt each role orchestrator for a sub-task, the prompt contains indications for code to be written as cleanly as possible. Let them use functions, keep the code modular, use typing and
+                adhere to high software engineering standards. Let the role orchestrator log as much as possible in their own scratchpad, this will be used to verify and check they have done.
+                Write very detailed account in the manifests and in the scratchpad. Always start by commanding the `Reporting_Orchestrator` to investigate the project and its contents recursively; you need to know the current
+                state of the project and how you can proceed. If you need to do a small task, such as writing code and executing, then you can delegate this to any of the role orchestrators that manage a file_managing agent.
+                Delegate as much as possible! You DO NOT want to do the dirt work yourself, USE your team!
+                """
