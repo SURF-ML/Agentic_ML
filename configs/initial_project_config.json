@@ -1,8 +1,0 @@
-{
-  "project_name": "agent_fmri_inspect",
-  "project_path": "../fmri_project",
-  "task_description": "I want to inspect an fmri dataset I downloaded to further process it in the near future. So, for now only inspect the data and make a detailed report and a plan of how you suggest to preprocess it to train a 3DCNN in the future with pytorch. So the data lives under /projects/2/hpmlprjs/medical_datasets/MRI/ds004496/. And we are particularly interested in the data under the sessions, e.g., /projects/2/hpmlprjs/medical_datasets/MRI/ds004496/sub-03/ses-coco/func/. But also make sure to inspect other folders and .json files. To open .nii files, take a look at nibabel library. The data comes from https://www.nature.com/articles/s41597-023-02471-x, so please review this also, create a structured and detailed report from that paper. We only downloaded the COCO part of the complete dataset, so ignore the imagenet part. Make sure to save your findings in appropriate files. Make sure to open the .nii files for inspections, create a script to do so, so we know what to expect for the next steps. So I need two things: 1. a summary of the paper and 2. A total overview of the fmri dataset and how it relates to the .json, and a full report with hypothetical preprocessing steps. Don't list the whole data directory recursively as it contains a lot of data.",
-  "data_type": "None",
-  "target_framework": "None",
-  "data_folder_path_from_user": "/projects/2/hpmlprjs/medical_datasets/MRI/ds004496/"
-}
