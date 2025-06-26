@@ -303,6 +303,9 @@ class AgentOrchestrator:
     def setup_main_orchestrator(self,
                                 orchestrator_agent_strings: List[str],
                                 orchestrator_configs: Optional[Dict[str, Dict[str, Any]]] = None) -> None:
+        """
+        Sets up the root main orchestrator, can call multiple orchestrators
+        """
         
         managed_orchestrators: List[CodeAgent] = []
         if orchestrator_configs is None:
@@ -402,6 +405,7 @@ class AgentOrchestrator:
         """Returns the LLM model instance."""
         return self.model
 
+    # DEPRECATED
     def setup_singular_agent(
         self,
         tools: List[callable],
