@@ -1,5 +1,5 @@
 [project]
-name = "Agentic_ML"
+name = "Agentic-ML"
 version = "0.1.0"
 description = "Automate DL training pipeline"
 authors = [
@@ -26,9 +26,8 @@ dependencies = [
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
-
 [project.scripts]
-agentic-ml = "src:main"
+agentic-ml = "agentic-ml:main"
 
 [project.urls]
 "Homepage" = "https://github.com/example/Agentic_ML"
