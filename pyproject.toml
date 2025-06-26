@@ -1,0 +1,31 @@
+[project]
+name = "Agentic_ML"
+version = "0.1.0"
+description = "Automate DL training pipeline"
+authors = [
+  { name = "Roo", email = "roo@example.com" },
+]
+requires-python = ">=3.8"
+dependencies = [
+  "requests",
+  "beautifulsoup4",
+  "arxiv",
+  "PyGithub",
+  "PyPDF2",
+  "scholarly",
+  "smolagents[transformers]",
+  "smolagents[telemetry,toolkit]",
+  "smolagents[litellm]",
+  "smolagents[openai]",
+  "python-dotenv",
+  "duckduckgo_search",
+  "transformers",
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project.urls]
+"Homepage" = "https://github.com/example/Agentic_ML"
+"Repository" = "https://github.com/example/Agentic_ML"
