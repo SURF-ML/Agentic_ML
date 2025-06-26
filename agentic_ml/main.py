@@ -4,10 +4,10 @@ import argparse
 import yaml 
 from typing import Dict, Any, List, Optional, Tuple
 
-from utils.util_functions import load_config
-from directives.ml_directive import Directive
+from agentic_ml.utils.util_functions import load_config
+from agentic_ml.directives.ml_directive import Directive
 from smolagents import CodeAgent
-from orchestrator.agent_orchestrator import AgentOrchestrator
+from agentic_ml.orchestrator.agent_orchestrator import AgentOrchestrator
 
 logger = logging.getLogger(__name__)
 

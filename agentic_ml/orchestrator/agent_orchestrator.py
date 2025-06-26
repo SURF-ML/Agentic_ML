@@ -16,7 +16,7 @@ from smolagents import CodeAgent, MultiStepAgent, LiteLLMModel
 from smolagents.models import TransformersModel, Model 
 from smolagents import OpenAIServerModel
 
-from .agent_definitions import AgentType, AGENT_SINGLE_TASK, AGENT_ORCHESTRATOR
+from agentic_ml.orchestrator.agent_definitions import AgentType, AGENT_SINGLE_TASK, AGENT_ORCHESTRATOR
 
 class AgentOrchestrator:
     """

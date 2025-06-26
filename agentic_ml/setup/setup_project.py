@@ -4,7 +4,7 @@ import argparse
 import yaml
 import logging
 
-from utils.util_functions import load_config
+from agentic_ml.utils.util_functions import load_config
 
 logger = logging.getLogger(__name__)
 if not logger.hasHandlers(): # Avoid adding multiple handlers if imported multiple times
