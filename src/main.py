@@ -5,15 +5,11 @@ import yaml
 from typing import Dict, Any, List, Optional, Tuple
 
 from utils.util_functions import load_config
-
-from phases.ml_directive import Directive
-
+from directives.ml_directive import Directive
 from smolagents import CodeAgent
-from agent_orchestrator import AgentOrchestrator
+from orchestrator.agent_orchestrator import AgentOrchestrator
 
-# Logger will be configured in main after parsing args for log level
 logger = logging.getLogger(__name__)
-
 
 def get_directives(prompt_details: dict, run_config: dict) -> List[str]:
     ml_directives = Directive(prompt_details)
@@ -27,26 +23,25 @@ def setup_main_orchestrator(orchestrator: AgentOrchestrator,
                             config: dict) -> Tuple[AgentOrchestrator, str]:
 
     run_config = config.get('run', {})
-    initial_prompt_filepath = run_config.get('initial_prompt_json', 'initial_project_config.json') 
+    initial_prompt_filepath = run_config.get('initial_prompt', 'initial_project.txt') 
 
-    if orchestrator.load_from_json(initial_prompt_filepath):
+    if orchestrator.load_from_txt(initial_prompt_filepath):
         prompt_details = orchestrator.get_initial_prompt_details()
-        logger.info(f"Loaded initial prompt details for project: {prompt_details.get('project_name', 'N/A') if prompt_details else 'N/A'}")
+        logger.info(f"Loaded initial prompt details for project: {prompt_details}")
     else:
         logger.warning(f"Could not load initial prompt details from {initial_prompt_filepath}. Proceeding without them.")
         prompt_details = None
 
     # Where the agent will be working from
-    work_dir = os.path.join(prompt_details.get("project_path"), prompt_details.get("project_name"))
-    
-    logger.info(f"Agent Model will be working from: {work_dir}")
-    os.chdir(work_dir)
+    #work_dir = os.path.join(prompt_details.get("project_path"), prompt_details.get("project_name"))
+    #
+    logger.info(f"Agent Model will be working from: {run_config.get('agent_working_dir')}")
+    os.chdir(run_config.get('agent_working_dir'))
 
     agent_config = config.get('agent', {})
 
     directive = get_directives(prompt_details, run_config)
     logger.debug(f"Generated directive for agent:\n{directive}")
-    #agent_list = agent_config.get("sub_agents")
     orchestrator_list = agent_config.get("orchestrator_agents")
 
     try:

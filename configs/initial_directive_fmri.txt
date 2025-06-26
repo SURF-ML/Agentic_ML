@@ -1,0 +1,1 @@
+Hi, I'm having issues with my current fmri pipeline. Could you help me with that. So, currently the repo in question is mri_voxel_model. Could you start by reading the whole repository. Use the ask_user_input tool as much as possible, so that we have a chat about what we need to do exactly.
