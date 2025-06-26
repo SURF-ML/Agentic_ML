@@ -1,7 +1,7 @@
 # Agentic_ML
 
 ## Overview
-`Agentic_ML` is a sophisticated Python application designed to automate deep learning (DL) training pipelines using an agentic approach. It leverages the `smolagents` library to orchestrate multiple specialized AI agents, each capable of handling different aspects of an ML project lifecycle. This includes tasks such as web browsing, PDF processing, file management, data inspection, and package installation.
+`Agentic_ML` is a sophisticated Python application designed to automate deep learning (DL) training pipelines using an agentic approach. It leverages the `smolagents` library from HuggingFace to orchestrate multiple specialized AI agents, each capable of handling different aspects of an ML project lifecycle. This includes tasks such as web browsing, PDF processing, file management, data inspection, and package installation.
 
 The core of the system is the `AgentOrchestrator`, which manages the creation, configuration, and execution of these agents. It supports integration with various Large Language Models (LLMs) from providers like Hugging Face Transformers, Ollama, or OpenAI, allowing for flexible and powerful AI-driven automation.
 
@@ -54,24 +54,16 @@ First, ensure your `config.yaml` (or chosen config file) points to your initial 
 ```yaml
 run:
   initial_prompt: initial_directive_fmri.txt
+  agent_working_dir: "../mri_voxel_model/"
 ```
 
 Then, execute the main script:
 
 ```bash
-python src/main.py --config configs/config.yaml --loglevel INFO
+python src/main.py --config configs/config.yaml
 ```
 
 - `--config`: Path to the YAML configuration file for the agent pipeline (default: `configs/config.yaml`).
-- `--loglevel`: Set the logging level (choices: `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`; default: `INFO`).
-
-### Configuration
-The `configs/` directory contains various YAML configuration files.
-- `config.yaml`: Main configuration file for LLM settings and agent orchestration.
-- `initial_directive_fmri.txt`: Example initial prompt/directive for the agent.
-
-## Contributing
-Contributions are welcome! Please feel free to submit issues or pull requests.
 
 ## License
 [Specify your license here, e.g., MIT License]
