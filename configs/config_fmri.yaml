@@ -1,6 +1,6 @@
 llm:
   provider: "openai" #"openai" #"ollama"
-  model_id: "Llama 3.3 70b Instruct AWQ" #"gemini-2.5-flash-preview-04-17" #"Llama 3.3 70b Instruct AWQ" # Llama-3.3-70b-Instruct-AWQ #"gemini-2.5-flash-preview-04-17" # "Llama-3.3-70b-Instruct-AWQ" # "gemini-2.5-flash-preview-04-17" #"deepseek-chat" #"ollama_chat/qwen3:32b" #ollama_chat/qwen3:14b #"gemini-2.0-flash" #"ollama_chat/qwen3:32b" #Qwen/Qwen3-14B" #ollama_chat/qwen3:14b
+  model_id: "Llama 3.3 70b Instruct AWQ" #"gemini-2.5-flash" #"gemini-2.5-flash-preview-04-17" #"gemini-2.5-flash-preview-04-17" #"Llama 3.3 70b Instruct AWQ" # Llama-3.3-70b-Instruct-AWQ #"gemini-2.5-flash-preview-04-17" # "Llama-3.3-70b-Instruct-AWQ" # "gemini-2.5-flash-preview-04-17" #"deepseek-chat" #"ollama_chat/qwen3:32b" #ollama_chat/qwen3:14b #"gemini-2.0-flash" #"ollama_chat/qwen3:32b" #Qwen/Qwen3-14B" #ollama_chat/qwen3:14b
   provider_kwargs:
     transformers:
       device_map: "auto" # Example
@@ -41,6 +41,7 @@ agent:
 
 
 run:
-  initial_prompt_json: "../configs/initial_project_config.json" # Path to JSON file with initial prompt details
+  initial_prompt: "../configs/initial_directive_fmri.txt" # Path to JSON file with initial prompt details
   execute_phase: "all"
+  agent_working_dir: "../mri_voxel_model/"
 
