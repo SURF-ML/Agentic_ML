@@ -73,6 +73,7 @@ class AgentOrchestrator:
             #                                   "posixpath",
 
             # ],
+            # if we don't import everything (*), it will bug out on a lot of libraries
             "additional_authorized_imports": ["*"],
             "stream_outputs": True,
             "max_steps": 50,
@@ -175,7 +176,10 @@ class AgentOrchestrator:
         if self.initial_prompt_details is None:
             logger.warning("Attempted to get initial prompt details, but none have been loaded.")
         return self.initial_prompt_details
-
+	
+	
+    # TODO: merge this function with _create_agent_instance()
+    # We don't really use this outside of this orchestrator class anyway
     def create_specialized_agent(
         self,
         agent_type_str: str,

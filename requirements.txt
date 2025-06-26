@@ -2,9 +2,12 @@ requests
 beautifulsoup4
 arxiv
 PyGithub
+PyPDF2
+scholarly
 smolagents[transformers]
 smolagents[telemetry,toolkit]
 smolagents[litellm]
 smolagents[openai]
 python-dotenv
+duckduckgo_search
 transformers
