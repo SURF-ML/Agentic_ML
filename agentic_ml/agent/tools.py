@@ -1006,8 +1006,8 @@ def search_google_scholar(query: str, max_results: int = 5) -> str:
         A formatted string with search results, or an error message.
     """
     try:
-        from scholarly import scholarly # type: ignore
-        from scholarly import MaxRetriesExceededException, ProxyError # type: ignore
+        import scholarly
+        from scholarly import MaxTriesExceededException, ProxyError  # type: ignore
     except ImportError:
         return "Error: The 'scholarly' library is not installed. Please install it using 'pip install scholarly'."
 
@@ -1017,7 +1017,7 @@ def search_google_scholar(query: str, max_results: int = 5) -> str:
         # but for a simple tool, direct access might work for a while.
         # scholarly.use_proxy(http="your_proxy", https="your_proxy")
         
-        search_query = scholarly.search_pubs(query)
+        search_query = scholarly.scholarly.search_pubs(query)
         count = 0
         for i in range(max_results): # scholarly's generator can be slow or hit limits
             try:
@@ -1043,7 +1043,7 @@ def search_google_scholar(query: str, max_results: int = 5) -> str:
                     break
             except StopIteration:
                 break # No more results
-            except MaxRetriesExceededException:
+            except MaxTriesExceededException:
                 results_output.append("Note: scholarly library hit max retries. Results may be incomplete.")
                 break
             except ProxyError:
@@ -1057,7 +1057,7 @@ def search_google_scholar(query: str, max_results: int = 5) -> str:
         if not results_output:
             return f"No results found on Google Scholar for query: {query}"
         return f"Google Scholar results for '{query}':\n\n" + "\n\n---\n\n".join(results_output)
-    except MaxRetriesExceededException:
+    except MaxTriesExceededException:
         return "Error searching Google Scholar: Max retries exceeded. You might be rate-limited. Try using a proxy with scholarly."
     except ProxyError:
         return "Error searching Google Scholar: Proxy error. Check your network or proxy configuration for scholarly."
