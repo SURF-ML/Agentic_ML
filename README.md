@@ -1,22 +1,16 @@
 # Agentic_ML
 
 ## Overview
-`Agentic_ML` is a sophisticated Python application designed to automate deep learning (DL) training pipelines using an agentic approach. It leverages the `smolagents` library from HuggingFace to orchestrate multiple specialized AI agents, each capable of handling different aspects of an ML project lifecycle. This includes tasks such as web browsing, PDF processing, file management, data inspection, and package installation.
+`Agentic_ML` leverages the `smolagents` library from HuggingFace to orchestrate multiple specialized agents on any task. An orchestrator agent should be capable of breaking up problems and spawning agents to fulfill sub problems. This includes tasks such as web browsing, PDF processing, file management, data inspection, and package installation, web search, or anything else.
 
-The core of the system is the `AgentOrchestrator`, which manages the creation, configuration, and execution of these agents. It supports integration with various Large Language Models (LLMs) from providers like Hugging Face Transformers, Ollama, or OpenAI, allowing for flexible and powerful AI-driven automation.
+The core of the system is the `AgentOrchestrator`, which manages the creation, configuration, and execution of these agents. It supports integration with  Ollama, or OpenAI.
 
 ## Features
 - **Agentic Architecture**: Utilizes a hierarchical structure of AI agents to break down and execute complex ML tasks.
-- **Configurable LLM Integration**: Supports multiple LLM providers (Transformers, Ollama, OpenAI) with customizable model IDs and provider-specific configurations.
 - **Specialized Agents**: Includes agents for diverse functionalities such as:
     - Web Browsing
     - PDF Document Processing
-    - File System Management
-    - Data Inspection and Analysis
-    - Package Installation
-- **Automated Pipeline Execution**: Automates the end-to-end process of DL training pipelines, from data acquisition to model deployment.
 - **Flexible Configuration**: Uses YAML configuration files to define LLM settings, agent behaviors, and project-specific parameters.
-- **Detailed Logging**: Provides comprehensive logging to monitor agent activities and troubleshoot issues.
 
 ## Installation
 
