@@ -1,53 +1,41 @@
 import os
 import logging
 import argparse 
-import yaml 
-from typing import Dict, Any, List, Optional, Tuple
+from typing import Dict, Any, List, Tuple
 
-from agentic_ml.utils.util_functions import load_config
-from agentic_ml.directives.ml_directive import Directive
-from smolagents import CodeAgent
+from agentic_ml.utils.util_functions import load_config, load_from_txt
+from agentic_ml.directives.agency import Directive
 from agentic_ml.orchestrator.agent_orchestrator import AgentOrchestrator
 
 logger = logging.getLogger(__name__)
 
-def get_directives(prompt_details: dict, run_config: dict) -> List[str]:
-    ml_directives = Directive(prompt_details)
-    exec_phase = run_config.get("execute_phase")
+def get_root_directive(template_path: str, initial_prompt: str) -> List[str]:
+    directive = Directive(template_path)
     # get all the directives, but for now this is just one prompt for the main orchestrator
-    directives = ml_directives.get_directives(exec_phase)[0]
+    directive = directive.get_directive(initial_prompt)
 
-    return directives
+    return directive
 
-def setup_main_orchestrator(orchestrator: AgentOrchestrator,
+def setup_root_orchestrator(orchestrator: AgentOrchestrator,
                             config: dict) -> Tuple[AgentOrchestrator, str]:
 
     run_config = config.get('run', {})
     initial_prompt_filepath = run_config.get('initial_prompt', 'initial_project.txt') 
 
-    if orchestrator.load_from_txt(initial_prompt_filepath):
-        prompt_details = orchestrator.get_initial_prompt_details()
-        logger.info(f"Loaded initial prompt details for project: {prompt_details}")
-    else:
-        logger.warning(f"Could not load initial prompt details from {initial_prompt_filepath}. Proceeding without them.")
-        prompt_details = None
-
-    # Where the agent will be working from
-    #work_dir = os.path.join(prompt_details.get("project_path"), prompt_details.get("project_name"))
-    #
+    prompt_details = load_from_txt(initial_prompt_filepath)
+    logger.info(f"Loaded initial prompt details for project")
+    
     logger.info(f"Agent Model will be working from: {run_config.get('agent_working_dir')}")
     os.chdir(run_config.get('agent_working_dir'))
 
     agent_config = config.get('agent', {})
 
-    directive = get_directives(prompt_details, run_config)
+    directive = get_root_directive(agent_config.get("template_path"), prompt_details)
     logger.debug(f"Generated directive for agent:\n{directive}")
-    orchestrator_list = agent_config.get("orchestrator_agents")
 
     try:
         # TODO: all agents take the same (simple) config right now, fix this for individual agents?
         orchestrator.setup_main_orchestrator(
-            orchestrator_agent_strings=orchestrator_list,
             orchestrator_configs=agent_config
         )
 
@@ -57,7 +45,7 @@ def setup_main_orchestrator(orchestrator: AgentOrchestrator,
     
     return orchestrator, directive
 
-def run_main_orchestrator(orchestrator: AgentOrchestrator,
+def run_root_orchestrator(orchestrator: AgentOrchestrator,
                           directive: str,) -> List[dict]:
 
     logger.info("Starting Agent Execution phase...")
@@ -71,7 +59,7 @@ def run_main_orchestrator(orchestrator: AgentOrchestrator,
     
     return final_result
 
-def run_ml_agents(config: Dict[str, Any]):
+def run_agent(config: Dict[str, Any]):
     """
     Main function to set up and run the ML pipeline agent using AgentOrchestrator,
     driven by the loaded configuration.
@@ -80,9 +68,9 @@ def run_ml_agents(config: Dict[str, Any]):
 
     orchestrator = AgentOrchestrator(config)
 
-    orchestrator, directive = setup_main_orchestrator(orchestrator, config)
+    orchestrator, directive = setup_root_orchestrator(orchestrator, config)
 
-    final_results = run_main_orchestrator(orchestrator, directive)
+    final_results = run_root_orchestrator(orchestrator, directive)
     
     last_result = final_results[-1]
     if isinstance(last_result, dict) and last_result.get("error"):
@@ -129,13 +117,13 @@ def main():
     logger.setLevel(numeric_level) # Ensure this specific logger also respects the level
 
     try:
-        app_config = load_config(args.config)
+        config = load_config(args.config)
     except Exception:
         logger.critical(f"Failed to load configuration from {args.config}. Exiting.")
         return
 
     # Run the pipeline with the loaded config
-    run_ml_agents(app_config)
+    run_agent(config)
 
 
 if __name__ == "__main__":

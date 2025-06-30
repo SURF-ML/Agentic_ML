@@ -26,3 +26,29 @@ def load_config(config_path: str) -> Dict[str, Any]:
     except Exception as e:
         logger.error(f"An unexpected error occurred while loading config from {config_path}: {e}")
         raise
+
+def load_from_txt(filepath: str) -> str:
+    """
+    Loads initial prompt details from a specified text file and stores them as a single string.
+
+    Args:
+        filepath (str): The path to the text file containing initial prompt details.
+
+    Returns:
+        bool: True if loading was successful, False otherwise.
+    """
+    try:
+        with open(filepath, 'r', encoding='utf-8') as f:
+            text = f.read()
+        logger.info(f"Successfully loaded initial prompt details from: {filepath}")
+        return text
+    except FileNotFoundError:
+        logger.error(f"Initial prompt text file not found at: {filepath}")
+        text = None
+        return text
+    except Exception as e:
+        logger.error(f"An unexpected error occurred while loading prompt from {filepath}: {e}", exc_info=True)
+        text = None
+        return text
+    
+        
