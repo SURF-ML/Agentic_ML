@@ -1334,6 +1334,9 @@ def spawn_and_run_agent(
 
     model = initialize_openai_model()
 
+    if isinstance(tools[0], str):
+        tools = [callable(tool) for tool in tools]
+
     # Step 1: Create the new agent instance with the provided definition.
     try:
         # Default configuration, can be overridden.
