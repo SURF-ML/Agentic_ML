@@ -1,0 +1,29 @@
+llm:
+  provider: "openai" #"openai" #"ollama"
+  model_id: "gemini-2.5-flash-lite-preview-06-17" #gemini-2.5-flash-lite-preview-06-17 # gemini-2.5-flash-preview-04-17 #"ollama_chat/qwen3:235b" #"gemini-2.5-flash-preview-04-17" #"gemini-2.5-flash-preview-04-17" #"Llama 3.3 70b Instruct AWQ" # Llama-3.3-70b-Instruct-AWQ #"gemini-2.5-flash-preview-04-17" # "Llama-3.3-70b-Instruct-AWQ" # "gemini-2.5-flash-preview-04-17" #"deepseek-chat" #"ollama_chat/qwen3:32b" #ollama_chat/qwen3:14b #"gemini-2.0-flash" #"ollama_chat/qwen3:32b" #Qwen/Qwen3-14B" #ollama_chat/qwen3:14b
+  provider_kwargs:
+    transformers:
+      device_map: "auto" # Example
+      # torch_dtype: "auto" # Example
+      max_new_tokens: 128000
+    ollama:
+        # torch_dtype: "auto" # Example
+        api_base: "http://localhost:11434"
+        num_ctx: 128000
+    openai:
+      max_new_tokens: 32768
+      api_base: "https://generativelanguage.googleapis.com/v1beta/openai/" # "https://generativelanguage.googleapis.com/v1beta/openai/" #"https://willma.liza.surf.nl/api/v0/" #"https://generativelanguage.googleapis.com/v1beta/openai/" #"https://api.deepseek.com" # "https://willma.liza.surf.nl/api/v0"
+      api_key: "GEMINI_API_KEY" #"GEMINI_API_KEY" #"AI_HUB_KEY" #"GEMINI_API_KEY" # "DEEPSEEK_API_KEY" # 
+
+agent:
+  max_steps: 50
+  stream_outputs: true
+  additional_authorized_imports: #unused right now
+    - null
+  template_path: "./agentic_ml/directives/root_orchestrator_template.md"
+  sub_agents: ["browser", "file_navigator"]
+
+run:
+  initial_prompt: "./agentic_ml/configs/initial_prompt.txt" # Path to JSON file with initial prompt details
+  agent_working_dir: "./"
+

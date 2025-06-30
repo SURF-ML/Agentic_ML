@@ -1334,13 +1334,14 @@ def spawn_and_run_agent(
 
     model = initialize_openai_model()
 
-    if isinstance(tools[0], str):
-        tools = [callable(tool) for tool in tools]
+    if tools and isinstance(tools[0], str):
+        tools = [eval(tool) for tool in tools]
 
     # Step 1: Create the new agent instance with the provided definition.
     try:
         # Default configuration, can be overridden.
-        config = {"max_steps": 15}
+        config = {"max_steps": 20,
+                  "additional_authorized_imports": ["*"],}
         if agent_config_overrides:
             config.update(agent_config_overrides)
 
@@ -1362,10 +1363,6 @@ def spawn_and_run_agent(
     try:
         result = spawned_agent.run(directive)
         result_str = f"Result from spawned '{agent_name}' agent: {str(result)}"
-        
-        # Truncate long results to avoid flooding the context
-        if len(result_str) > 3000:
-            result_str = result_str[:3000] + "\n... (result truncated)"
             
         return result_str
             

@@ -17,7 +17,7 @@ from smolagents.models import Model
 from smolagents import OpenAIServerModel
 
 
-from agentic_ml.orchestrator.agent_definitions import AgentType, AGENT_SINGLE_TASK, ALL_TOOLS
+from agentic_ml.orchestrator.agent_definitions import AgentType, AGENT_TASK, ALL_TOOLS
 
 class AgentOrchestrator:
     """
@@ -55,6 +55,8 @@ class AgentOrchestrator:
             "description": None
         }
 
+        self.managed_agents = self._initialize_predefined_agents(predefined_agents=config.get("agent").get("sub_agents"))
+
     def _initialize_llm_model(self) -> Model:
         """
         Initializes and returns the LLM model instance.
@@ -84,7 +86,7 @@ class AgentOrchestrator:
             logger.error(f"Error initializing Transformer Model for model {self.llm_model_id}: {e}", exc_info=True)
             raise RuntimeError(f"Transformer Model initialization failed for model {self.llm_model_id}: {e}")
 
-    def _create_agent_instance(
+    def _create_agent(
         self,
         tools: List[callable],
         name: str,
@@ -100,6 +102,8 @@ class AgentOrchestrator:
 
         if override_config:
             agent_config.update(override_config)
+
+        print("agnet config", agent_config)
         
         try:
             instance = agent_class(
@@ -114,6 +118,27 @@ class AgentOrchestrator:
             logger.error(f"Error creating agent '{name}': {e}", exc_info=True)
             raise
 
+    def _initialize_predefined_agents(self, predefined_agents: List[str]) -> List[CodeAgent]:
+        managed_agents: List[CodeAgent] = []
+
+        for agent_type_str in predefined_agents:
+            try:
+                agent_info = AGENT_TASK[AgentType.from_string(agent_type_str)]
+                # TODO: config hardcoded to None because we have a few fields that are incompatible with smolagents
+                agent = self._create_agent(agent_class=CodeAgent,
+                                            name=agent_type_str,
+                                            tools=agent_info["tools"],
+                                            description=agent_info["description"],
+                                           )
+                
+                managed_agents.append(agent)
+            except Exception as e:
+                logger.error(f"Failed to create specialized agent of type '{agent_type_str}': {e}", exc_info=True)
+                # Decide behavior: raise, or log and continue
+                raise ValueError(f"Setup failed for specialized agent: {agent_type_str}") from e
+            
+        return managed_agents
+
     def setup_main_orchestrator(self, orchestrator_configs: Optional[Dict[str, Dict[str, Any]]] = None) -> None:
         """
         Sets up the root main orchestrator, can call multiple orchestrators
@@ -127,18 +152,18 @@ class AgentOrchestrator:
             )
         
         # this class sets up orchestrator agents solely
-        agent_type = AgentType.from_string("agent_orchestrator")
-        orchestrator_tools = ALL_TOOLS # AGENT_SINGLE_TASK.get(agent_type)["tools"]
+        agent_type = AgentType.from_string("orchestrator")
+        orchestrator_tools = AGENT_TASK.get(agent_type)["tools"]
+        print("toools", orchestrator_tools)
 
         # TODO: config hardcoded to None because we have a few fields that are incompatible with smolagents
-        self.main_orchestrator = self._create_agent_instance(
+        self.main_orchestrator = self._create_agent(
             tools=orchestrator_tools,
             name="main_orchestrator",
             description=manager_description,
             agent_class=CodeAgent,
-            #managed_agents=managed_orchestrators,
-            override_config=None
-        )
+            managed_agents=self.managed_agents)
+        
         logger.info(f"Manager agent '{self.main_orchestrator.name}' set up.")
 
     # For now only runs an orchestrator CodeAgent
