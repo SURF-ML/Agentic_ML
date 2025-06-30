@@ -8,7 +8,7 @@ from agentic_ml.agent.tools import (create_directory, write_file, append_to_file
     search_wikipedia, ask_user_for_input, check_python_package_version, 
     list_installed_python_packages, grep_directory, zip_files, unzip_file,
     search_google_scholar, download_file_from_url, read_pdf_content,
-    find_files_by_pattern
+    find_files_by_pattern, spawn_and_run_agent
 
 )
 
@@ -38,12 +38,13 @@ ALL_TOOLS = [create_directory,
             search_google_scholar, 
             download_file_from_url, 
             read_pdf_content,
-            find_files_by_pattern]
+            find_files_by_pattern,
+            spawn_and_run_agent]
 
 class AgentType(Enum):
    
     # Orchestrator agents
-    Research_Orchestrator = "research_orchestrator"
+    AGENT_ORCHESTRATOR = "agent_orchestrator"
 
     @classmethod
     def from_string(cls, s: str) -> 'AgentType':
@@ -54,7 +55,7 @@ class AgentType(Enum):
 
 AGENT_SINGLE_TASK = {
 
-    AgentType.AGENT_ORCHESTRATING: {
+    AgentType.AGENT_ORCHESTRATOR: {
         "tools": [
             replace_text_in_file,
             execute_python_script,

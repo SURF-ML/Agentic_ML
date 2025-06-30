@@ -34,14 +34,14 @@ This is your **most critical tool**. It allows you to create a new agent from sc
 
 ### Function Signature Example:
 ```python
-spawn_and_run_agent(agent_name, agent_description, tool_names, directive)
+spawn_and_run_agent(agent_name, agent_description, tools, directive)
 ```
 
 ### Arguments:
 - `agent_name`: A descriptive, unique name for the agent you are creating (e.g., `"webpage_summarizer_v1"`, `"file_cleanup_agent"`).
 - `agent_description`: A detailed description of the agent's only purpose. This is crucial for its performance. Be specific.  
 _Example_: `"An agent that browses a single URL and returns its text content."`
-- `tool_names`: A Python list of strings, naming the exact tools this agent is allowed to use from the **Available Tool Manifest** below.
+- `tools`: A Python list of strings, naming the exact tools this agent is allowed to use from the **Available Tool Manifest** below.
 - `directive`: The precise and complete instruction you are giving to the agent you are creating.
 
 ---
@@ -54,7 +54,7 @@ _Example_: `"An agent that browses a single URL and returns its text content."`
 spawn_and_run_agent(
     agent_name="url_content_extractor",
     agent_description="A highly specialized agent that can only browse a given URL and extract its text content. It cannot write files or search.",
-    tool_names=["browse_webpage"],
+    tools=["browse_webpage"],
     directive="Your task is to browse the webpage at 'https://en.wikipedia.org/wiki/Hierarchical_task_analysis' and return the full text content."
 )
 ```

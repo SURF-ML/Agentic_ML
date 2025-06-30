@@ -127,7 +127,7 @@ class AgentOrchestrator:
             )
         
         # this class sets up orchestrator agents solely
-        agent_type = AgentType.from_string("agent_orchestrating")
+        agent_type = AgentType.from_string("agent_orchestrator")
         orchestrator_tools = ALL_TOOLS # AGENT_SINGLE_TASK.get(agent_type)["tools"]
 
         # TODO: config hardcoded to None because we have a few fields that are incompatible with smolagents

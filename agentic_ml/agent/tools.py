@@ -1264,7 +1264,7 @@ def initialize_openai_model() -> Model:
         """
         Initializes and returns the LLM model instance.
         """
-        model_id = "gemini-2.5-flash-preview-04-17"
+        model_id = "gemini-2.5-flash-lite-preview-06-17" # "gemini-2.5-flash-preview-04-17"
         api_key = "GEMINI_API_KEY"
         api_base = "https://generativelanguage.googleapis.com/v1beta/openai/"
         try:
@@ -1274,7 +1274,7 @@ def initialize_openai_model() -> Model:
                                     api_base=api_base
                                 )
             
-            logger.info(f"Transformer Model initialized successfully for model: {"gemini-2.5-flash-preview-04-17"}")
+            logger.info(f"Transformer Model initialized successfully for model: 'gemini-2.5-flash-preview-04-17'")
             return model_instance
         except Exception as e:
             logger.error(f"Error initializing Model for model {model_id}: {e}", exc_info=True)
@@ -1282,10 +1282,9 @@ def initialize_openai_model() -> Model:
         
 @tool
 def spawn_and_run_agent(
-    model: Model,
     agent_name: str,
     agent_description: str,
-    tools: List[Callable],
+    tools: List[callable],
     directive: str,
     managed_agents: Optional[List[CodeAgent]] = None,
     agent_config_overrides: Optional[Dict[str, Any]] = None
@@ -1332,6 +1331,8 @@ def spawn_and_run_agent(
     """
     logger.info(f"TOOL 'spawn_and_run_agent' CALLED: Spawning agent '{agent_name}'.")
     logger.info(f"Directive for spawned agent: '{directive}'")
+
+    model = initialize_openai_model()
 
     # Step 1: Create the new agent instance with the provided definition.
     try:

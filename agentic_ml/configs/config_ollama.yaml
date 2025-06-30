@@ -1,6 +1,6 @@
 llm:
   provider: "openai" #"openai" #"ollama"
-  model_id: gemini-2.5-flash-preview-04-17 #"ollama_chat/qwen3:235b" #"gemini-2.5-flash-preview-04-17" #"gemini-2.5-flash-preview-04-17" #"Llama 3.3 70b Instruct AWQ" # Llama-3.3-70b-Instruct-AWQ #"gemini-2.5-flash-preview-04-17" # "Llama-3.3-70b-Instruct-AWQ" # "gemini-2.5-flash-preview-04-17" #"deepseek-chat" #"ollama_chat/qwen3:32b" #ollama_chat/qwen3:14b #"gemini-2.0-flash" #"ollama_chat/qwen3:32b" #Qwen/Qwen3-14B" #ollama_chat/qwen3:14b
+  model_id: gemini-2.5-flash-lite-preview-06-17 # gemini-2.5-flash-preview-04-17 #"ollama_chat/qwen3:235b" #"gemini-2.5-flash-preview-04-17" #"gemini-2.5-flash-preview-04-17" #"Llama 3.3 70b Instruct AWQ" # Llama-3.3-70b-Instruct-AWQ #"gemini-2.5-flash-preview-04-17" # "Llama-3.3-70b-Instruct-AWQ" # "gemini-2.5-flash-preview-04-17" #"deepseek-chat" #"ollama_chat/qwen3:32b" #ollama_chat/qwen3:14b #"gemini-2.0-flash" #"ollama_chat/qwen3:32b" #Qwen/Qwen3-14B" #ollama_chat/qwen3:14b
   provider_kwargs:
     transformers:
       device_map: "auto" # Example
@@ -22,9 +22,9 @@ agent:
     - null
   #sub_agents: ["browsing", "pdf_opening", "file_searching", "data_inspecting", "package_installing", "file_managing"] # unused for now
   #orchestrator_agents: ["research_orchestrator", "environmentsetup_orchestrator", "dataingestionvalidation_orchestrator", "exploratorydataanalysis_orchestrator", "datapreprocessingfeatureengineering_orchestrator", "modeltraining_orchestrator", "hyperparameteroptimization_orchestrator", "modelevaluation_orchestrator", "reporting_orchestrator"] # orchestrator agent defines which sub agents are needed
-  template_path: "./directives/root_orchestrator_template.md"
+  template_path: "./agentic_ml/directives/root_orchestrator_template.md"
 
 run:
-  initial_prompt: "../configs/initial_prompt.txt" # Path to JSON file with initial prompt details
+  initial_prompt: "./agentic_ml/configs/initial_prompt.txt" # Path to JSON file with initial prompt details
   agent_working_dir: "./"
 
