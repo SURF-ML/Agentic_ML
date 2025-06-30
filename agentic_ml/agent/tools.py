@@ -951,7 +951,7 @@ def read_pdf_content(filepath: str, max_pages: int = 0) -> str:
         full_text = "\n".join(text_content).strip()
         if not full_text:
             return f"No text could be extracted from {filepath}. The PDF might contain images of text or use complex encoding."
-        return f"Extracted text from {filepath} (first {num_pages_to_read} pages):\n{full_text[:5000]}{'...' if len(full_text) > 5000 else ''}" # Limit output
+        return f"Extracted text from {filepath} (first {num_pages_to_read} pages):\n{full_text}"
     except Exception as e:
         return f"Error reading PDF file {filepath}: {str(e)}"
 
@@ -1336,6 +1336,9 @@ def spawn_and_run_agent(
 
     if tools and isinstance(tools[0], str):
         tools = [eval(tool) for tool in tools]
+
+    if managed_agents and isinstance(managed_agents[0], str):
+        managed_agents = [eval(mng) for mng in managed_agents]
 
     # Step 1: Create the new agent instance with the provided definition.
     try:
