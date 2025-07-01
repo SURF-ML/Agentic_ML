@@ -1,27 +1,11 @@
 # Agentic_ML
 
 ## Overview
-`Agentic_ML` is a sophisticated Python application designed to automate deep learning (DL) training pipelines using an agentic approach. It leverages the `smolagents` library from HuggingFace to orchestrate multiple specialized AI agents, each capable of handling different aspects of an ML project lifecycle. This includes tasks such as web browsing, PDF processing, file management, data inspection, and package installation.
+`Agentic_ML` leverages the `smolagents` library from HuggingFace to orchestrate multiple specialized AI agents, spawned by a single agent orchestrator. This could include tasks such as web browsing, PDF processing, file management, data inspection, and package installation.
 
-The core of the system is the `AgentOrchestrator`, which manages the creation, configuration, and execution of these agents. It supports integration with various Large Language Models (LLMs) from providers like Hugging Face Transformers, Ollama, or OpenAI, allowing for flexible and powerful AI-driven automation.
-
-## Features
-- **Agentic Architecture**: Utilizes a hierarchical structure of AI agents to break down and execute complex ML tasks.
-- **Configurable LLM Integration**: Supports multiple LLM providers (Transformers, Ollama, OpenAI) with customizable model IDs and provider-specific configurations.
-- **Specialized Agents**: Includes agents for diverse functionalities such as:
-    - Web Browsing
-    - PDF Document Processing
-    - File System Management
-    - Data Inspection and Analysis
-    - Package Installation
-- **Automated Pipeline Execution**: Automates the end-to-end process of DL training pipelines, from data acquisition to model deployment.
-- **Flexible Configuration**: Uses YAML configuration files to define LLM settings, agent behaviors, and project-specific parameters.
-- **Detailed Logging**: Provides comprehensive logging to monitor agent activities and troubleshoot issues.
+The core of the system is the `AgentOrchestrator`, which manages the creation, configuration, and execution of these agents. It supports integration with various Large Language Models (LLMs) from providers like Ollama, or OpenAI.
 
 ## Installation
-
-### Prerequisites
-- Python 3.8+
 
 ### Setup
 1. **Clone the repository:**
@@ -63,7 +47,15 @@ Then, execute the main script:
 python src/main.py --config configs/config.yaml
 ```
 
-- `--config`: Path to the YAML configuration file for the agent pipeline (default: `configs/config.yaml`).
+## Quick Run
+
+To quickly run the agent and see it in action, use the following command:
+
+```bash
+python -m agentic_ml.main --config ./agentic_ml/configs/config.yaml --prompt 'Hi could you open the following webpage and extract details from it: https://arxiv.org/pdf/2407.00203, make a detailed and thorough structured report in mark down.'
+```
 
 ## License
 [Specify your license here, e.g., MIT License]
+
+
