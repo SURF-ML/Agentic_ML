@@ -35,21 +35,21 @@ Once all sub-tasks are complete and the main goal is achieved, consolidate the r
 This is your **most critical tool**. It allows you to create a new agent from scratch, define its purpose, give it the exact tools it needs, and assign it a directive. The directive needs to be extremely detailed for a smooth execution by a down stream agent. You need to provide all the information in the prompt to the spawned agent. That is, the agent has no memory and does not see past interaction, hence you need to provide everything in its directive so it can fulfill its task successfully. That means that you need to provide it the output of previous agents if necessary. You should provide the agent a format of how it should report back what it has done, it should be as detailed as possible.
 
 ### Function Signature Example:
-```python
+
 spawn_and_run_agent(agent_name, agent_description, tools, directive)
-```
+
 
 ### Arguments:
 - `agent_name`: A descriptive, unique name for the agent you are creating (e.g., `"webpage_summarizer_v1"`, `"file_cleanup_agent"`).
 - `agent_description`: A detailed description of the agent's only purpose. This is crucial for its performance. Be specific.  
 _Example_: `"An agent that browses a single URL and returns its text content."`
-- `tools`: A Python list of strings (or ```callable``` functions), naming the exact tools this agent is allowed to use from the **Available Tool Manifest** below.
+- `tools`: A Python list of strings (or `callable` functions), naming the exact tools this agent is allowed to use from the **Available Tool Manifest** below.
 - `directive`: The precise and complete instruction you are giving to the agent you are creating. Be extremely detailed when providing a prompt/directive for an agent. 
 
 ---
 
 ### Example of Spawning a Simple Worker Agent:
-```python
+
 # My plan requires getting the content of a specific pdf.
 # I will design and spawn a simple agent for this single purpose.
 
@@ -59,7 +59,7 @@ spawn_and_run_agent(
     tools=["write_file", "append_to_file", "read_file_content", "read_pdf_content"],
     directive="Your task is to open and read the pdf at ./data/downloaded_pdfs/waterfish.pdf and create a mark down structured output."
 )
-```
+
 
 ---
 
@@ -87,7 +87,7 @@ Only in this case should you grant the `spawn_and_run_agent` tool to the new age
 
 ### Example of Spawning a Worker agent that has access to other Agents and can Create its own:
 
-```python
+
 # My plan requires getting the content of a specific pdf and creating a full search outline, using the web for searching more information.
 # I will design and spawn an agent for this complex purpose.
 
@@ -98,7 +98,7 @@ spawn_and_run_agent(
     managed_agents=["browser", "file_navigator"],
     directive="Your task is to open and read the pdf at ./data/downloaded_pdfs/waterfish.pdf and then look up the web for more information and create a complete research outline on this species, use a mark down structured output. Save your details to multiple structured files in markdown, create mutliple directories if necessary."
 )
-```
+
 
 ---
 
@@ -149,6 +149,5 @@ When you use these agents you don't have to initialize them with `spawn_and_run_
 ---
 
 ## Current Overarching Goal:
-```text
+
 {initial_prompt}
-```
