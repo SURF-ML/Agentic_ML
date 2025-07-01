@@ -1260,7 +1260,113 @@ def ask_user_for_input(prompt_message: str) -> str:
 
 from smolagents import OpenAIServerModel
 
-def initialize_openai_model() -> Model:
+# hardcoding this for now
+from typing import Type
+from smolagents import DuckDuckGoSearchTool, VisitWebpageTool, WikipediaSearchTool
+from enum import Enum
+
+
+class AgentType(Enum):
+   
+    # Orchestrator agents
+    ORCHESTRATOR = "orchestrator"
+    BROWSER = "browser"
+    FILE_NAVIGATOR = "file_navigator"
+
+    @classmethod
+    def from_string(cls, s: str) -> 'AgentType':
+        try:
+            return cls(s.lower())
+        except ValueError:
+            raise ValueError(f"Unknown agent type string: {s}")
+
+AGENT_TASK = {
+    AgentType.BROWSER: {
+        "tools": [
+            DuckDuckGoSearchTool(), 
+            VisitWebpageTool(), 
+            WikipediaSearchTool(),
+            search_arxiv,
+            search_github_repositories,
+            search_google_scholar,
+            download_file_from_url,
+        ],
+        "name": "browser",
+        "description": "Specialized in web navigation, using online search engines (Wikipedia, arXiv, GitHub, Google Scholar), and downloading files from URLs. Args: query (for searches) or url (for Browse/downloading)."
+    },
+    AgentType.FILE_NAVIGATOR: {
+        "tools": [
+            find_files_by_pattern,
+            list_directory_contents,
+            grep_directory, 
+            inspect_file_type_and_structure,
+        ],
+        "name": "file_navigator",
+        "description": "Specialized in searching for files by name or pattern, listing directory contents, and searching for text within files. Args: directory, patterns, search_terms."
+    },
+}
+
+def _create_agent(tools: List[callable],
+                name: str,
+                description: str,
+                agent_class: Type[CodeAgent] = CodeAgent,
+                managed_agents: Optional[List[CodeAgent]] = None,
+                override_config: Optional[Dict[str, Any]] = None,
+                model: Optional[Model] = None
+    ) -> CodeAgent:
+        """Create any CodeAgent instance with proper config merging."""
+        agent_config = {"additional_authorized_imports": ["*"],
+                        "stream_outputs": True,
+                        "max_steps": 50,
+                        "name": None,
+                        "description": None
+                    }
+
+        agent_config["name"] = name
+        agent_config["description"] = description
+
+        if override_config:
+            agent_config.update(override_config)
+
+        print("agnet config", agent_config)
+        
+        try:
+            instance = agent_class(
+                tools=tools,
+                model=model,
+                managed_agents=managed_agents or [],
+                **agent_config
+            )
+            logger.info(f"Agent '{name}' ({agent_class.__name__}) created successfully.")
+            return instance
+        except Exception as e:
+            logger.error(f"Error creating agent '{name}': {e}", exc_info=True)
+            raise
+
+def _initialize_predefined_agents(predefined_agents: List[str], model: Model) -> List[CodeAgent]:
+        managed_agents: List[CodeAgent] = []
+
+        for agent_type_str in predefined_agents:
+            try:
+                agent_info = AGENT_TASK[AgentType.from_string(agent_type_str)]
+                # TODO: config hardcoded to None because we have a few fields that are incompatible with smolagents
+                agent = _create_agent(
+                                    agent_class=CodeAgent,
+                                    name=agent_type_str,
+                                    tools=agent_info["tools"],
+                                    description=agent_info["description"],
+                                    model=model
+                                           )
+                
+                managed_agents.append(agent)
+            except Exception as e:
+                logger.error(f"Failed to create specialized agent of type '{agent_type_str}': {e}", exc_info=True)
+                # Decide behavior: raise, or log and continue
+                raise ValueError(f"Setup failed for specialized agent: {agent_type_str}") from e
+            
+        return managed_agents
+
+def _initialize_openai_model() -> Model:
         """
         Initializes and returns the LLM model instance.
         """
@@ -1332,13 +1438,13 @@ def spawn_and_run_agent(
     logger.info(f"TOOL 'spawn_and_run_agent' CALLED: Spawning agent '{agent_name}'.")
     logger.info(f"Directive for spawned agent: '{directive}'")
 
-    model = initialize_openai_model()
+    model = _initialize_openai_model()
 
     if tools and isinstance(tools[0], str):
         tools = [eval(tool) for tool in tools]
 
     if managed_agents and isinstance(managed_agents[0], str):
-        managed_agents = [eval(mng) for mng in managed_agents]
+        managed_agents = _initialize_predefined_agents(managed_agents, model)
 
     # Step 1: Create the new agent instance with the provided definition.
     try:

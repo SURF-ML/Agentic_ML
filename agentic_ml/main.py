@@ -6,6 +6,7 @@ from typing import Dict, Any, List, Tuple
 from agentic_ml.utils.util_functions import load_config, load_from_txt
 from agentic_ml.directives.agency import Directive
 from agentic_ml.orchestrator.agent_orchestrator import AgentOrchestrator
+from agentic_ml.instrumenting.phoenix_instrumentor import setup_phoenix
 
 logger = logging.getLogger(__name__)
 
@@ -138,7 +139,7 @@ def main():
     except Exception:
         logger.critical(f"Failed to load configuration from {args.config}. Exiting.", exc_info=True)
         return
-
+    setup_phoenix()
     # Run the agent, passing the configuration and the optional prompt override
     run_agent(config, args.prompt)
 

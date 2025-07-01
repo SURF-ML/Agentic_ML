@@ -146,7 +146,23 @@ This a **complete list of Agents** that you have at your disposal that you can m
 
 When you use these agents you don't have to initialize them with `spawn_and_run_agent`.
 
+Note that 'browser' and 'file_navigator' are not tools, these are agents. Hence, you have to pass the 'managed_agents' argument to the 'spawn_and_run_agent' in the following way:
+
+spawn_and_run_agent(
+    ...,
+    managed_agents=['browser', 'file_navigator'],
+    ...
+)
 ---
+
+## Code blobs
+
+Remember to use code blobs when writing code as such. Make sure to include code with the correct pattern, for instance:
+
+Thoughts: Your thoughts
+<code>
+# Your python code here
+</code>
 
 ## Current Overarching Goal:
 
